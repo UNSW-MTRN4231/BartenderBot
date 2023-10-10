@@ -1,7 +1,14 @@
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
-//#include "tf2/exceptions.h"
+#include "tf2/exceptions.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
+#include "std_msgs/msg/string.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include <chrono>
+#include <string>
+#include <functional>
+
 
 using std::placeholders::_1;
 
@@ -13,7 +20,7 @@ class main_brain : public rclcpp::Node {
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
     public:
-    main_brain() : Node("main_brain"), count(_0) {
+    main_brain() : Node("main_brain") {
 
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -38,7 +45,7 @@ class main_brain : public rclcpp::Node {
     }
 
     void executeCommand() {}
-}
+};
 
 int main(int argc, char * argv[])
 {
