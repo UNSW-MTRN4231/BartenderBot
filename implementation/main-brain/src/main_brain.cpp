@@ -17,7 +17,7 @@ class main_brain : public rclcpp::Node {
 
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-        subscription_ = this->create_subscription<std_msgs::msg::String>("keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
+        //subscription_ = this->create_subscription<std_msgs::msg::String>("keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
 
         timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&main_brain::tfCallback, this));
     };
