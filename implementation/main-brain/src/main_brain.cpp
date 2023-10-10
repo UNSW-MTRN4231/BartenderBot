@@ -8,23 +8,24 @@
 #include <chrono>
 #include <string>
 #include <functional>
+#include "brain_msgs/msg/command.hpp"
 
 
 using std::placeholders::_1;
 
 class main_brain : public rclcpp::Node {
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-    rclcpp::TimerBase::SharedPtr timer_;
-    geometry_msgs::msg::TransformStamped t;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
-    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    
 
     public:
     main_brain() : Node("main_brain") {
 
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-        //subscription_ = this->create_subscription<std_msgs::msg::String>("keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
+
+        publisher_ = this->create_publisher<brain_msgs::msg::Command>("command",10);
+
+        subscription_ = this->create_subscription<std_msgs::msg::String>(
+      "first_topic", 10, std::bind(&main_brain::executeCommand, this, _1));
 
         timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&main_brain::tfCallback, this));
     };
@@ -44,7 +45,28 @@ class main_brain : public rclcpp::Node {
         }
     }
 
-    void executeCommand() {}
+    void executeCommand(const std_msgs::msg::String::SharedPtr msg) const {
+        std::string drink;
+        brain_msgs::msg::Command instruction;
+        if (msg->data == "space") {
+            std::cout << "input: ";
+            std::cin >> drink;
+            std::cout << drink << std::endl;
+        }
+
+        instruction.command.data = "pickup";
+        instruction.item.data = drink;
+        instruction.item_pose = t;
+
+        publisher_->publish(instruction);
+
+    }
+    rclcpp::Publisher<brain_msgs::msg::Command>::SharedPtr publisher_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    geometry_msgs::msg::TransformStamped t;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 };
 
 int main(int argc, char * argv[])
