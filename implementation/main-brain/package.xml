@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>implementation</name>
+  <name>main_brain</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="z5310432@ad.unsw.edu.au">mtrn</maintainer>
@@ -14,7 +14,12 @@
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>brain_msgs</depend>
+
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
