@@ -9,6 +9,7 @@
 #include <string>
 #include <functional>
 #include "brain_msgs/msg/command.hpp"
+#include <vector>
 
 
 using std::placeholders::_1;
@@ -27,7 +28,10 @@ class main_brain : public rclcpp::Node {
         subscription_ = this->create_subscription<std_msgs::msg::String>(
       "first_topic", 10, std::bind(&main_brain::executeCommand, this, _1));
 
-        timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&main_brain::tfCallback, this));
+        //timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&main_brain::tfCallback, this));
+
+        drinkOptions.names = {"vodka","rum and coke","margarita"};
+        drinkOptions.ingredients = {{"vodka"},{"rum","coke"},{}}
     };
 
     private:
@@ -56,7 +60,11 @@ class main_brain : public rclcpp::Node {
 
         instruction.command.data = "pickup";
         instruction.item.data = drink;
-        instruction.item_pose = t;
+        auto it = std::find(drinkOptions.names.begin(),drinkOptions.names.end(), drink)
+        if (it != drinkOptions.names.end()) {
+            std::cout <<drinkOptions.ingredients[it] << std::endl;
+        }
+        instruction.item_pose = t; 
 
         publisher_->publish(instruction);
 
@@ -67,6 +75,15 @@ class main_brain : public rclcpp::Node {
     geometry_msgs::msg::TransformStamped t;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+
+    struct drinkOptions {
+        std::vector<std::string> names = {"shot","vodka cranberry","margarita"};;
+        std::vector<std::vector<std::string>> ingredients = {
+            {"vodka"},
+            {"vodka","c.juice"},
+            {"tequila","lem.juice","lim.juice"}
+        };
+    }
 };
 
 int main(int argc, char * argv[])
