@@ -26,20 +26,26 @@ class main_brain : public rclcpp::Node {
         publisher_ = this->create_publisher<brain_msgs::msg::Command>("command",10);
 
         subscription_ = this->create_subscription<std_msgs::msg::String>(
-      "first_topic", 10, std::bind(&main_brain::executeCommand, this, _1));
+      "keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
+      
 
+        for (auto& checkDrink : drinkOptions) {
+        std::cout << "NEXT DRINK" << std::endl;
+        std::cout << checkDrink.name << std::endl;
+            for (auto& ing : checkDrink.ingredients) {
+                std::cout << ing << std::endl;
+            }
+        }
         //timer_ = this->create_wall_timer( std::chrono::milliseconds(200), std::bind(&main_brain::tfCallback, this));
 
-        drinkOptions.names = {"vodka","rum and coke","margarita"};
-        drinkOptions.ingredients = {{"vodka"},{"rum","coke"},{}}
     };
 
     private:
 
-    void tfCallback() {
+    void tfCallback(req_frame) {
      // Check if the transformation is between "world" and "req_frame"
         std::string fromFrameRel = "world";
-        std::string toFrameRel = "req_frame";
+        std::string toFrameRel = req_frame;
 
         try {
             t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
@@ -60,15 +66,26 @@ class main_brain : public rclcpp::Node {
 
         instruction.command.data = "pickup";
         instruction.item.data = drink;
-        auto it = std::find(drinkOptions.names.begin(),drinkOptions.names.end(), drink)
-        if (it != drinkOptions.names.end()) {
-            std::cout <<drinkOptions.ingredients[it] << std::endl;
+        for (auto& checkDrink : drinkOptions) {
+            if (checkDrink.name == drink) {
+                std::cout << "Drink found!" << std::endl;
+                for (auto& ing : checkDrink.ingredients) {
+                    std::cout << ing << std::endl;
+                }
+                break;
+            }
         }
-        instruction.item_pose = t; 
 
+        instruction.item_pose = t; 
+        tfCallback(req_frame);
         publisher_->publish(instruction);
 
     }
+    struct drinkTemplate {
+        std::string name;
+        std::vector<std::string> ingredients;
+    };
+
     rclcpp::Publisher<brain_msgs::msg::Command>::SharedPtr publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
     rclcpp::TimerBase::SharedPtr timer_;
@@ -76,14 +93,14 @@ class main_brain : public rclcpp::Node {
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
-    struct drinkOptions {
-        std::vector<std::string> names = {"shot","vodka cranberry","margarita"};;
-        std::vector<std::vector<std::string>> ingredients = {
-            {"vodka"},
-            {"vodka","c.juice"},
-            {"tequila","lem.juice","lim.juice"}
-        };
-    }
+    std::string req_frame;
+
+    std::vector<struct drinkTemplate> drinkOptions = {
+        drinkTemplate{"shot",{"vodka"}},
+        drinkTemplate{"vodka cranberry",{"vodka","c.juice"}},
+        drinkTemplate{"margarita",{"tequila","lim.juice","lem.juice"}}
+    };
+    
 };
 
 int main(int argc, char * argv[])
