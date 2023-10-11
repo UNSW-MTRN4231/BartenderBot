@@ -49,8 +49,8 @@ DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
 
-#install(DIRECTORY
-#  launch
-#  DESTINATION share/${PROJECT_NAME}/
-#)
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
 ament_package()

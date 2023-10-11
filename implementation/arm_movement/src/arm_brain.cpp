@@ -46,6 +46,20 @@ class arm_brain : public rclcpp::Node
 
     }
 
+    void home() {
+      curr_pose.position.x = 234.44;
+      curr_pose.position.y = -816.65;
+      curr_pose.position.z = -336.17;
+      
+      tf2::Quaternion q;
+      q.setRPY(1.206, 1.206 , 1.206);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
+    }
+
     // combines both parts of shaker and mixes, then dissasembles
     void shake(geometry_msgs::msg::Pose big, geometry_msgs::msg::Pose small) {
       // picks up small shaker, moves above other, rotates and combines
@@ -96,6 +110,8 @@ class arm_brain : public rclcpp::Node
     
 
     void brain(const brain_msgs::msg::Command &msg) const {
+      //moves to home
+      //home();
       // check for what command is
 
       // adding ingredient
