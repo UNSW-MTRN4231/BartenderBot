@@ -7,6 +7,7 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include "tf2/LinearMath/Quaternion.h"
 #include "brain_msgs/msg/command.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 
 using std::placeholders::_1;
 
@@ -36,6 +37,21 @@ class arm_brain : public rclcpp::Node
     }
 
   private:
+    
+    //Function to generate a target position message
+    geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
+    geometry_msgs::msg::Pose msg;
+ 	
+    msg.orientation.x = 0;
+    msg.orientation.y = 1;
+    msg.orientation.z = 0;
+    msg.orientation.w = 0;
+    msg.position.x = tf.transform.translation.x;
+    msg.position.y = tf.transform.translation.y;
+    msg.position.z = tf.transform.translation.z;
+    return msg;
+}
+    
     void send_pose() {
       geometry_msgs::msg::Pose pose = curr_pose;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", pose.position.x, pose.position.y, pose.position.z);
