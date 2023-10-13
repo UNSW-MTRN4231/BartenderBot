@@ -38,6 +38,9 @@ class arm_brain : public rclcpp::Node {
       curr_pose.orientation.z = 0;
       curr_pose.orientation.w = 0;
 
+      tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+      tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
     }
 
   private:
@@ -181,6 +184,23 @@ class arm_brain : public rclcpp::Node {
       }
       */
     }
+
+    void tfCallback(req_frame) {
+     // Check if the transformation is between "world" and "req_frame"
+        std::string fromFrameRel = "world";
+        std::string toFrameRel = req_frame;
+
+        try {
+            t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+        } catch (const tf2::TransformException & ex) {
+            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+            return;
+        }
+    }
+
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    geometry_msgs::msg::TransformStamped t;
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
