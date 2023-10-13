@@ -143,7 +143,7 @@ class arm_brain : public rclcpp::Node {
     }
     
     // pours the bottle at location
-    void pour(double offset) {
+    void pour(float offset) {
         // moves accross offset width
         curr_pose.position.x += offset;
         send_pose();
@@ -179,12 +179,12 @@ class arm_brain : public rclcpp::Node {
         // adding ingredient
         case "fill":
           //need repeat
-          for (auto i = 0; i < size(msg.item_names); i++) {
+          for (auto i = 0; i < size(msg.item_frames); i++) {
             move(msg.item_frames[i]); // to bottle
             old_pose = curr_pose;
             grip();  
             move("big_shaker"); //to shaker
-            pour();
+            pour(msg.item_heights[i]);
             move("return"); //to old bottle;
             grip(); //release
           }
@@ -201,9 +201,9 @@ class arm_brain : public rclcpp::Node {
           grip();
           
           //need repeat
-          for (auto i = 0; i < size(msg.item_names); i++) {
+          for (auto i = 0; i < size(msg.item_frames); i++) {
             move(msg.item_frames[i]);
-            pour();
+            pour(msg.item_heights[i]);
           }
 
           move("return") //to old shaker
