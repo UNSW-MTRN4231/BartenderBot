@@ -5,9 +5,14 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
-#include "tf2/LinearMath/Quaternion.h"
+
 #include "brain_msgs/msg/command.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/exceptions.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
 
 using std::placeholders::_1;
 
@@ -42,13 +47,15 @@ class arm_brain : public rclcpp::Node
     geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
     geometry_msgs::msg::Pose msg;
  	
-    msg.orientation.x = 0;
-    msg.orientation.y = 1;
-    msg.orientation.z = 0;
-    msg.orientation.w = 0;
     msg.position.x = tf.transform.translation.x;
     msg.position.y = tf.transform.translation.y;
     msg.position.z = tf.transform.translation.z;
+    
+    msg.orientation.x = tf.transform.translation.x;
+    msg.orientation.y = tf.transform.translation.y;
+    msg.orientation.z = tf.transform.translation.z;
+    msg.orientation.w = tf.transform.translation.w;
+    
     return msg;
 }
     
