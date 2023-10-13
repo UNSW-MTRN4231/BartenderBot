@@ -19,8 +19,7 @@ using std::placeholders::_1;
 /* This example creates a subclass of Node and uses std::bind() to register a
 * member function as a callback from the timer. */
 
-class arm_brain : public rclcpp::Node
-{
+class arm_brain : public rclcpp::Node {
   public:
     arm_brain() : Node("arm_brain")
     {
@@ -42,22 +41,22 @@ class arm_brain : public rclcpp::Node
     }
 
   private:
-    
     //Function to generate a target position message
     geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
-    geometry_msgs::msg::Pose msg;
- 	
-    msg.position.x = tf.transform.translation.x;
-    msg.position.y = tf.transform.translation.y;
-    msg.position.z = tf.transform.translation.z;
+      geometry_msgs::msg::Pose msg;
     
-    msg.orientation.x = tf.transform.translation.x;
-    msg.orientation.y = tf.transform.translation.y;
-    msg.orientation.z = tf.transform.translation.z;
-    msg.orientation.w = tf.transform.translation.w;
-    
-    return msg;
-}
+      msg.position.x = tf.transform.translation.x;
+      msg.position.y = tf.transform.translation.y;
+      msg.position.z = tf.transform.translation.z;
+      
+      // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
+      msg.orientation.x = tf.transform.translation.x;
+      msg.orientation.y = tf.transform.translation.y;
+      msg.orientation.z = tf.transform.translation.z;
+      msg.orientation.w = tf.transform.translation.w;
+      
+      return msg;
+    }
     
     void send_pose() {
       geometry_msgs::msg::Pose pose = curr_pose;
@@ -81,6 +80,14 @@ class arm_brain : public rclcpp::Node
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose();
+    }
+
+    void move(geometry_msgs::msg::transform_stamped tf) {
+      curr_pose = generatePoseFromTransform(tf);
+
+      send_pose();
+
+      //TODO: CHECK IF OBJECT IS STILL IN LOCATION -> MOVE AGAIN
     }
 
     // combines both parts of shaker and mixes, then dissasembles
@@ -134,16 +141,35 @@ class arm_brain : public rclcpp::Node
 
     void brain(const brain_msgs::msg::Command &msg) const {
       //moves to home
-      //home();
+      home();
       // check for what command is
+      switch(msg.item) {
+        
+        // adding ingredient
+        case "fill":
+          move(); //to bottle
+          grip();  
+          move(); //to shaker
+          pour();
+          move(); //to old bottle;
+          grip(); //release
 
-      // adding ingredient
+          break;
+        // mixing ingredients
+        case "shake":
+          shake();
+          break:
+        
+        // pouring cocktail
+        case "pour":
+          move(); //to shaker
+          grip();
+
+          break;
+
+        default:
+      }
       
-
-      // mixing ingredients
-
-
-      // pouring ingredients
     }
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
