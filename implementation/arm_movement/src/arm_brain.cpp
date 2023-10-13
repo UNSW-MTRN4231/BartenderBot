@@ -50,10 +50,10 @@ class arm_brain : public rclcpp::Node {
       msg.position.z = tf.transform.translation.z;
       
       // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
-      msg.orientation.x = tf.transform.translation.x;
-      msg.orientation.y = tf.transform.translation.y;
-      msg.orientation.z = tf.transform.translation.z;
-      msg.orientation.w = tf.transform.translation.w;
+      msg.orientation.x = tf.transform.rotation.x;
+      msg.orientation.y = tf.transform.rotation.y;
+      msg.orientation.z = tf.transform.rotation.z;
+      msg.orientation.w = tf.transform.rotation.w;
       
       return msg;
     }
@@ -82,7 +82,7 @@ class arm_brain : public rclcpp::Node {
       send_pose();
     }
 
-    void move(geometry_msgs::msg::transform_stamped tf) {
+    void move(geometry_msgs::msg::TransformStamped tf) {
       curr_pose = generatePoseFromTransform(tf);
 
       send_pose();
@@ -140,6 +140,8 @@ class arm_brain : public rclcpp::Node {
     
 
     void brain(const brain_msgs::msg::Command &msg) const {
+      /*
+      
       //moves to home
       home();
       // check for what command is
@@ -147,6 +149,7 @@ class arm_brain : public rclcpp::Node {
         
         // adding ingredient
         case "fill":
+          //need repeat
           move(); //to bottle
           grip();  
           move(); //to shaker
@@ -164,12 +167,19 @@ class arm_brain : public rclcpp::Node {
         case "pour":
           move(); //to shaker
           grip();
+          
+          //need repeat
+          move();
+          pour();
+
+          move() //to old shaker
+          grip(); //release
 
           break;
 
         default:
       }
-      
+      */
     }
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
