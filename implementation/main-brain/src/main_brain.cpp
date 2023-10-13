@@ -1,15 +1,18 @@
 #include <memory>
+#include <chrono>
+#include <string>
+#include <functional>
+#include <vector>
+
 #include <rclcpp/rclcpp.hpp>
 #include "tf2/exceptions.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
+
 #include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
-#include <chrono>
-#include <string>
-#include <functional>
 #include "brain_msgs/msg/command.hpp"
-#include <vector>
+
 
 
 using std::placeholders::_1;
@@ -26,7 +29,11 @@ class main_brain : public rclcpp::Node {
         publisher_ = this->create_publisher<brain_msgs::msg::Command>("command",10);
 
         subscription_ = this->create_subscription<std_msgs::msg::String>(
-      "keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
+        "keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
+
+        continue_sub_ = this->create_subscription<std_msgs::msg::String>(
+        "ready", 10, std::bind(&main_brain::executeCommand, this, _1));
+
       
 
         for (auto& checkDrink : drinkOptions) {
@@ -77,7 +84,6 @@ class main_brain : public rclcpp::Node {
         }
 
         instruction.item_pose = t; 
-        tfCallback(req_frame);
         publisher_->publish(instruction);
 
     }
@@ -88,12 +94,12 @@ class main_brain : public rclcpp::Node {
 
     rclcpp::Publisher<brain_msgs::msg::Command>::SharedPtr publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr continue_sub_;
+
     rclcpp::TimerBase::SharedPtr timer_;
     geometry_msgs::msg::TransformStamped t;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-
-    std::string req_frame;
 
     std::vector<struct drinkTemplate> drinkOptions = {
         drinkTemplate{"shot",{"vodka"}},
