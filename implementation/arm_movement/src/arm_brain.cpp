@@ -60,7 +60,28 @@ class arm_brain : public rclcpp::Node {
       
       return msg;
     }
+
+    //requests transform frame for object
+    geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
+      // Check if the transformation is between "world" and "req_frame"
+      std::string fromFrameRel = "world";
+      std::string toFrameRel = req_frame;
+      geometry_msgs::msg::TransformStamped t;
+
+      try {
+          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+          RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+          return;
+      }
+    }
+
+    //gets pose of object
+    geometry_msgs::msg::Pose get_pose(std::string item_frame) {
+        return generatePoseFromTransform(tfCallback(item_frame));
+    }
     
+    //sends pose to ur
     void send_pose() {
       geometry_msgs::msg::Pose pose = curr_pose;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", pose.position.x, pose.position.y, pose.position.z);
@@ -71,6 +92,7 @@ class arm_brain : public rclcpp::Node {
 
     }
 
+    //returns robot to home position
     void home() {
       curr_pose.position.x = 234.44;
       curr_pose.position.y = -816.65;
@@ -85,9 +107,14 @@ class arm_brain : public rclcpp::Node {
       send_pose();
     }
 
-    void move(geometry_msgs::msg::TransformStamped tf) {
-      curr_pose = generatePoseFromTransform(tf);
-
+    void move(std::string item) {
+      
+      if (item == "return") {
+        curr_pose = old_pose;
+      else {
+        curr_pose = get_pose(item);
+      }
+      
       send_pose();
 
       //TODO: CHECK IF OBJECT IS STILL IN LOCATION -> MOVE AGAIN
@@ -143,68 +170,58 @@ class arm_brain : public rclcpp::Node {
     
 
     void brain(const brain_msgs::msg::Command &msg) const {
-      /*
       
       //moves to home
       home();
       // check for what command is
-      switch(msg.item) {
+      switch(msg.command) {
         
         // adding ingredient
         case "fill":
           //need repeat
-          move(); //to bottle
-          grip();  
-          move(); //to shaker
-          pour();
-          move(); //to old bottle;
-          grip(); //release
-
+          for (auto i = 0; i < size(msg.item_names); i++) {
+            move(msg.item_frames[i]); // to bottle
+            old_pose = curr_pose;
+            grip();  
+            move("big_shaker"); //to shaker
+            pour();
+            move("return"); //to old bottle;
+            grip(); //release
+          }
           break;
         // mixing ingredients
         case "shake":
-          shake();
+          shake(get_pose("big_shaker"), get_pose(msg.item_frames[0]));
           break:
         
         // pouring cocktail
         case "pour":
-          move(); //to shaker
+          move("big_shaker"); //to shaker
+          old_pose = curr_pose;
           grip();
           
           //need repeat
-          move();
-          pour();
+          for (auto i = 0; i < size(msg.item_names); i++) {
+            move(msg.item_frames[i]);
+            pour();
+          }
 
-          move() //to old shaker
+          move("return") //to old shaker
           grip(); //release
 
           break;
 
         default:
       }
-      */
-    }
-
-    void tfCallback(req_frame) {
-     // Check if the transformation is between "world" and "req_frame"
-        std::string fromFrameRel = "world";
-        std::string toFrameRel = req_frame;
-
-        try {
-            t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
-        } catch (const tf2::TransformException & ex) {
-            RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-            return;
-        }
     }
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-    geometry_msgs::msg::TransformStamped t;
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
     geometry_msgs::msg::Pose curr_pose;
+    geometry_msgs::msg::Pose old_pose;
     size_t count_;
 };
 
