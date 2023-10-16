@@ -145,11 +145,12 @@ class arm_brain : public rclcpp::Node {
     
     // pours the bottle at location
     void pour(float offset) {
+        offset = offset/2;
         // moves accross offset width
         curr_pose.position.x += offset;
         send_pose();
-        // pours drink
         
+        // pours drink
         tf2::Quaternion q;
         q.setRPY(M_PI/4, 0 , 0); // 45 degrees roll in rad
         curr_pose.orientation.x = q.x();
