@@ -72,7 +72,7 @@ class arm_brain : public rclcpp::Node {
           t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-          return NULL;
+          
       }
     }
 
@@ -171,14 +171,14 @@ class arm_brain : public rclcpp::Node {
 
     
 
-    void brain(const brain_msgs::msg::Command &msg) const {
+    void brain(const brain_msgs::msg::Command &msg) {
       
       //moves to home
       //home();
       // check for what command is
       
       // adding ingredient
-      if (msg.command == "fill") {
+      if (msg.command.data == "fill") {
         //need repeat
         for (auto i = 0; i < size(msg.item_frames); i++) {
           move(msg.item_frames[i].data); // to bottle
@@ -192,12 +192,12 @@ class arm_brain : public rclcpp::Node {
       }
       
       // mixing ingredients
-      else if (msg.command == "shake") {
+      else if (msg.command.data == "shake") {
         shake(get_pose("big_shaker"), get_pose(msg.item_frames[0].data));
       }
       
       // pouring cocktail
-      else if (msg.command == "pour") {
+      else if (msg.command.data == "pour") {
         
         move("big_shaker"); //to shaker
         old_pose = curr_pose;
