@@ -72,7 +72,7 @@ class arm_brain : public rclcpp::Node {
           t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-          return;
+          return NULL;
       }
     }
 
@@ -111,6 +111,7 @@ class arm_brain : public rclcpp::Node {
       
       if (item == "return") {
         curr_pose = old_pose;
+      }
       else {
         curr_pose = get_pose(item);
       }
@@ -172,46 +173,46 @@ class arm_brain : public rclcpp::Node {
     void brain(const brain_msgs::msg::Command &msg) const {
       
       //moves to home
-      home();
+      //home();
       // check for what command is
-      switch(msg.command) {
-        
-        // adding ingredient
-        case "fill":
-          //need repeat
-          for (auto i = 0; i < size(msg.item_frames); i++) {
-            move(msg.item_frames[i]); // to bottle
-            old_pose = curr_pose;
-            grip();  
-            move("big_shaker"); //to shaker
-            pour(msg.item_heights[i]);
-            move("return"); //to old bottle;
-            grip(); //release
-          }
-          break;
-        // mixing ingredients
-        case "shake":
-          shake(get_pose("big_shaker"), get_pose(msg.item_frames[0]));
-          break:
-        
-        // pouring cocktail
-        case "pour":
-          move("big_shaker"); //to shaker
+      
+      // adding ingredient
+      if (msg.command == "fill") {
+        //need repeat
+        for (auto i = 0; i < size(msg.item_frames); i++) {
+          move(msg.item_frames[i].data); // to bottle
           old_pose = curr_pose;
-          grip();
-          
-          //need repeat
-          for (auto i = 0; i < size(msg.item_frames); i++) {
-            move(msg.item_frames[i]);
-            pour(msg.item_heights[i]);
-          }
-
-          move("return") //to old shaker
+          grip();  
+          move("big_shaker"); //to shaker
+          pour(msg.item_heights[i].data);
+          move("return"); //to old bottle;
           grip(); //release
+        }
+      }
+      
+      // mixing ingredients
+      else if (msg.command == "shake") {
+        shake(get_pose("big_shaker"), get_pose(msg.item_frames[0].data));
+      }
+      
+      // pouring cocktail
+      else if (msg.command == "pour") {
+        
+        move("big_shaker"); //to shaker
+        old_pose = curr_pose;
+        grip();
+          
+        //need repeat
+        for (auto i = 0; i < size(msg.item_frames); i++) {
+          move(msg.item_frames[i].data);
+          pour(msg.item_heights[i].data);
+        }
 
-          break;
-
-        default:
+        move("return"); //to old shaker
+        grip(); //release
+      }
+      else {
+        RCLCPP_INFO( this->get_logger(), "Unknown Command");
       }
     }
 
