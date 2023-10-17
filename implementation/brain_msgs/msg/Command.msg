@@ -4,7 +4,7 @@
 std_msgs/String command
 
 #name of item
-std_msgs/String item
+std_msgs/String[10] item_names
 
-# position of required bottle
-geometry_msgs/TransformStamped item_pose
+#Vector of item's coord frame
+std_msgs/String[10] item_frames
