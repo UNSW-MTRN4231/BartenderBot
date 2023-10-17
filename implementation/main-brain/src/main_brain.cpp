@@ -79,15 +79,15 @@ class main_brain : public rclcpp::Node {
     void fillShaker(struct drinkTemplate& drink) {
         int numIngredients = drink.ingredients.size();
         std::string instruction = "fill";
-        std::vector<std::string> ingredientName; 
-        std::vector<std::string> ingredientFrame;
+        std::vector<std::string> ingredientNames; 
+        std::vector<std::string> ingredientFrames;
         
         if (ingredientIndex < numIngredients) {
             std::cout << armReady;
-            ingredientName.push_back(drink.ingredients.at(ingredientIndex));
-            ingredientFrame.push_back(drink.ingredients.at(ingredientIndex));
-            std::cout << ingredientName.at(0) << ", " << ingredientFrame.at(0) << std::endl;
-            sendCommand(instruction, ingredientName, ingredientFrame);
+            ingredientNames.push_back(drink.ingredients.at(ingredientIndex));
+            ingredientFrames.push_back(drink.ingredients.at(ingredientIndex));
+            std::cout << ingredientNames.at(0) << ", " << ingredientFrames.at(0) << std::endl;
+            sendCommand(instruction, ingredientNames, ingredientFrames);
             ingredientIndex++;
         } else {
             state = 2;
@@ -95,13 +95,22 @@ class main_brain : public rclcpp::Node {
         
     }
 
-    // void shakeDrink() {
-    //     std::cout << "shaking" << std::endl;
-    // };
+    void shakeDrink() {
+        std::cout << "shaking" << std::endl;
+        std::string instruction = "shake";
+        std::vector<std::string> ingredientNames; 
+        std::vector<std::string> ingredientFrames;
+        sendCommand(instruction,ingredientNames,ingredientFrames);
+    };
 
-    // void serveDrink() {
-    //     std::cout << "serving" << std::endl;
-    // }
+    void serveDrink() {
+        std::cout << "serving" << std::endl;
+        std::cout << "shaking" << std::endl;
+        std::string instruction = "serve";
+        std::vector<std::string> ingredientNames = {"glass1","glass2","glass3"}; 
+        std::vector<std::string> ingredientFrames = {"glass1","glass2","glass3"};
+        sendCommand(instruction,ingredientNames,ingredientFrames);
+    }
 
     void executeCommand(const std_msgs::msg::String::SharedPtr msg) {
         std::string drink;
@@ -146,14 +155,7 @@ class main_brain : public rclcpp::Node {
 
         }
 
-        // std::cout << "BEGIN SHAKE" << std::endl;
-        // shakeDrink();
-        // std::cout << "END SHAKE" << std::endl;
 
-        // std::cout << "BEGIN SERVE" << std::endl;
-        // serveDrink();
-        // std::cout << "END SERVE" << std::endl;
-        
     }
     
 };
