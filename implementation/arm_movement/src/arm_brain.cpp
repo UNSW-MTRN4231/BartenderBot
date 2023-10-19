@@ -94,12 +94,12 @@ class arm_brain : public rclcpp::Node {
 
     //returns robot to home position
     void home() {
-      curr_pose.position.x = 234.44;
-      curr_pose.position.y = -816.65;
-      curr_pose.position.z = -336.17;
+      curr_pose.position.x = 0.58835;
+      curr_pose.position.y = 0.133;
+      curr_pose.position.z = 0.37212;
       
       tf2::Quaternion q;
-      q.setRPY(1.206, 1.206 , 1.206);
+      q.setRPY(-M_PI, 0 , M_PI/2);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -174,7 +174,7 @@ class arm_brain : public rclcpp::Node {
     void brain(const brain_msgs::msg::Command &msg) {
       
       //moves to home
-      //home();
+      home();
       // check for what command is
       
       // adding ingredient
