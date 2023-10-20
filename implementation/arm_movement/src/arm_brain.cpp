@@ -9,6 +9,7 @@
 #include "brain_msgs/msg/command.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 
+#include "std_msgs/msg/string.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/exceptions.h"
 #include "tf2_ros/transform_listener.h"
@@ -28,6 +29,9 @@ class arm_brain : public rclcpp::Node {
 
       // Initialise the pose publisher
       pose_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>("move_to", 10);
+
+      // Initialise the brain ready publisher
+      ready_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>("ready", 10);
 
       // Initialise current arm pose
       curr_pose.position.x = 0;
@@ -215,6 +219,8 @@ class arm_brain : public rclcpp::Node {
       else {
         RCLCPP_INFO( this->get_logger(), "Unknown Command");
       }
+      std_msgs::msg::String ready = "ready";
+      ready_publisher_->publish(ready);
     }
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
@@ -222,6 +228,7 @@ class arm_brain : public rclcpp::Node {
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr ready_publisher_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
     size_t count_;
