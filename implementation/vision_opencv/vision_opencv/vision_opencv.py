@@ -9,10 +9,10 @@ import numpy as np
 from vision_ros_msgs.msg import BoundingBox, BoundingBoxes
 
 BOX_COLORS = {
-    # "blue": {"color_lower": np.array([100, 43, 46]), "color_upper": np.array([124, 255, 255])},
-    "red": {"color_lower": np.array([0, 127, 67]), "color_upper": np.array([10, 255, 255])},
+    "blue": {"color_lower": np.array([100, 100, 0]), "color_upper": np.array([150, 255, 76])},
+    # "red": {"color_lower": np.array([230, 127, 67]), "color_upper": np.array([255, 255, 255])},
     # "yellow": {"color_lower": np.array([26, 43, 46]), "color_upper": np.array([34, 255, 255])},
-    "green": {"color_lower": np.array([35, 43, 46]), "color_upper": np.array([77, 255, 255])},
+    # "green": {"color_lower": np.array([35, 43, 46]), "color_upper": np.array([77, 255, 255])},
     # "purple": {"color_lower": np.array([125, 43, 46]), "color_upper": np.array([155, 255, 255])},
     # "pink": {"color_lower": np.array([155, 0, 16]), "color_upper": np.array([179, 255, 255])}
 }
@@ -23,7 +23,7 @@ class ImageConverter(Node):
         super().__init__('image_converter')
        
         self.image_sub = self.create_subscription(
-            Image, "/camera/image_raw", self.callback, 10)
+            Image, "/image_raw", self.callback, 10)
         self.position_pub = self.create_publisher(
             BoundingBoxes, "/vision_opencv", 10)
         self.bridge = CvBridge()
@@ -55,7 +55,7 @@ class ImageConverter(Node):
                 area = cv2.contourArea(cnt)
                 print(area)
 
-                if area >10000:
+                if area >100:
 
                     x, y, w, h = cv2.boundingRect(cnt)
                     rect = cv2.minAreaRect(cnt)

@@ -65,11 +65,10 @@ class YoloOpencvProcessor(Node):
 
             if yolo_class_inside:
                 combined_class = f"{yolo_class_inside}_{opencv_class}"
-                self.get_logger().info(f'OpenCV detection (center: {center_x}, {center_y}) is inside a YOLO {yolo_class_inside} bounding box. 
-                     Combined class: {combined_class}')
+                self.get_logger().info(f'OpenCV detection (center: {center_x}, {center_y}) is inside a YOLO {yolo_class_inside} bounding box. Combined class: {combined_class}')
                 
-                transform_matrix = np.array([[1, 0, 0],
-                                            [0, 1, 0]])
+                transform_matrix = np.array([[679.81445, 0, 331.16923],   
+                                             [0, 682.45007, 244.24562]])
 
                 center_matrix = np.array([[center_x, center_y]])
 
@@ -81,6 +80,7 @@ class YoloOpencvProcessor(Node):
                 bbox_msg = BoundingBox()
                 bbox_msg.x = transformed_x
                 bbox_msg.y = transformed_y
+                bbox_msg.z = 300
                 bbox_msg.angle = 0.0  # Assuming no rotation
                 bbox_msg.color = combined_class
             
