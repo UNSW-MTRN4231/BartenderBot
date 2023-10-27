@@ -33,6 +33,9 @@ class arm_brain : public rclcpp::Node {
       // Initialise the brain ready publisher
       ready_publisher_ = this->create_publisher<std_msgs::msg::String>("ready", 10);
 
+      // Initialise the arduino publisher
+      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduino", 10);
+
       // Initialise current arm pose
       curr_pose.position.x = 0;
       curr_pose.position.y = 0;
@@ -93,7 +96,16 @@ class arm_brain : public rclcpp::Node {
     }
     // toggle gripper
     void grip() {
-
+      std_msgs::msg::String grip;
+      if (toggle == 0) {
+        grip.data  = "open";
+        toggle = 1;
+      }
+      else if(toggle == 1) {
+        grip.data = "close";
+        toggle = 0;
+      }
+      ready_publisher_->publish(grip);
     }
 
     //returns robot to home position
@@ -230,8 +242,10 @@ class arm_brain : public rclcpp::Node {
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ready_publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
+    bool toggle = 0;
     size_t count_;
 };
 

@@ -49,7 +49,8 @@ class move_to_marker : public rclcpp::Node
 
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
-      move_group_interface->setPlanningTime(10.0);
+      
+      move_group_interface->setPlanningTime(30.0);
 
       std::string frame_id = move_group_interface->getPlanningFrame();
 
