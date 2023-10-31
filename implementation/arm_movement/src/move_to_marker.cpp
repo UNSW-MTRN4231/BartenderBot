@@ -65,11 +65,22 @@ class move_to_marker : public rclcpp::Node
 
       RCLCPP_INFO(this->get_logger(), "insert walls");
 
+      // Generate path constraint obstacles
+
+      auto col_object_backConst = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.10, 0.5, frame_id, "backConst");
+      auto col_object_sideConst = generateCollisionObject( 0.04, 1.2, 1.0, -0.25, 0.25, 0.5, frame_id, "sideConst");
+
+      RCLCPP_INFO(this->get_logger(), "insert constraints");
+
+
       moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
       // Apply table as a collision object
       planning_scene_interface.applyCollisionObject(col_object_backWall);
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
       planning_scene_interface.applyCollisionObject(col_object_table);
+      // Apply constraints as a collision object
+      planning_scene_interface.applyCollisionObject(col_object_backConst);
+      planning_scene_interface.applyCollisionObject(col_object_sideConst);
 
       RCLCPP_INFO(this->get_logger(), "constructed");
     }
@@ -86,6 +97,20 @@ class move_to_marker : public rclcpp::Node
       
       moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
+      /*
+      // Cartesian Paths
+      std::vector<geometry_msgs::msg::Pose> waypoints;
+      geometry_msgs::msg::Pose targetPose1 = msg;
+      waypoints.push_back(targetPose1);
+
+      moveit_msgs::msg::RobotTrajectory trajectory;
+      double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+
+      RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
+
+      sleep(15.0);
+      */
+
       //Plan movement to ball point
       move_group_interface->setPoseTarget(msg);
       success = static_cast<bool>(move_group_interface->plan(planMessage));
@@ -93,11 +118,12 @@ class move_to_marker : public rclcpp::Node
       //Execute movement to point 1
       if (success) {
         move_group_interface->execute(planMessage);
+        RCLCPP_INFO(this->get_logger(), "Done moving");
+
       } else {
         std::cout <<  "Planning failed!" << std::endl;
       }
 
-      RCLCPP_INFO(this->get_logger(), "Done moving");
     }
   }
 
