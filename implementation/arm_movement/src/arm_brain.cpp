@@ -94,8 +94,9 @@ class arm_brain : public rclcpp::Node {
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", pose.position.x, pose.position.y, pose.position.z);
       pose_publisher_->publish(pose);
     }
+    
     // toggle gripper
-    void grip() {
+    void grip(bool toggle) {
       std_msgs::msg::String grip;
       if (toggle == 0) {
         grip.data  = "open";
@@ -142,21 +143,52 @@ class arm_brain : public rclcpp::Node {
       // picks up small shaker, moves above other, rotates and combines
       curr_pose = small;
       send_pose();
-      grip();
+      grip(1);
       curr_pose.position.z += 20;
       send_pose();
       curr_pose = big;
       curr_pose.position.z += 20;
       send_pose();
 
-      curr_pose.orientation.z -= 10;
+      curr_pose.position.z -= 10;
       send_pose();
-      grip();
+      grip(0);
       // picks up combined, moves above and rotates
+      curr_pose.position.z -= 5;
+      send_pose();
+      grip(1);
+
+      curr_pose.position.z += 30;
+      send_pose();
+
+      tf2::Quaternion q;
+      q.setRPY(M_PI, 0 , M_PI/2);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      q.setRPY(-M_PI, 0 , M_PI/2);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+
 
       // places back down and dissasembles
+      curr_pose.position.z -= 30;
+      send_pose();
+      grip(0);
 
+      curr_pose.position.z += 5;
+      send_pose();
+      grip(1);
 
+      curr_pose.position.z += 10;
+      send_pose();
+
+      curr_pose.position.x += 15;
+      send_pose();
+      grip(0);
     }
     
     // pours the bottle at location
@@ -199,11 +231,11 @@ class arm_brain : public rclcpp::Node {
         for (auto i = 0; i < size(msg.item_frames); i++) {
           move(msg.item_frames[i].data); // to bottle
           old_pose = curr_pose;
-          grip();  
+          grip(1);  
           move("big_shaker"); //to shaker
           pour(msg.item_heights[i].data);
           move("return"); //to old bottle;
-          grip(); //release
+          grip(0); //release
         }
       }
       
@@ -217,7 +249,7 @@ class arm_brain : public rclcpp::Node {
         
         move("big_shaker"); //to shaker
         old_pose = curr_pose;
-        grip();
+        grip(1);
           
         //need repeat
         for (auto i = 0; i < size(msg.item_frames); i++) {
@@ -226,7 +258,7 @@ class arm_brain : public rclcpp::Node {
         }
 
         move("return"); //to old shaker
-        grip(); //release
+        grip(0); //release
       }
       else {
         RCLCPP_INFO( this->get_logger(), "Unknown Command");
@@ -245,7 +277,6 @@ class arm_brain : public rclcpp::Node {
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
-    bool toggle = 0;
     size_t count_;
 };
 
