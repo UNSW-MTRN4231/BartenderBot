@@ -10,6 +10,10 @@ find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+find_package(vision_ros_msgs)
+find_package(geometry_msgs)
+find_package(visualization_msgs)
+find_package(rclcpp REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -22,5 +26,18 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+add_executable(bottle_markers src/bottle_marker.cpp)
+ament_target_dependencies(
+  bottle_markers
+  rclcpp
+  geometry_msgs
+  visualization_msgs
+  vision_ros_msgs
+)
+
+install(TARGETS 
+  bottle_markers
+DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
