@@ -5,6 +5,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
+
+#include <moveit_msgs/msg/planning_scene.hpp>
+#include <moveit_msgs/msg/attached_collision_object.hpp>
+
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "std_msgs/msg/string.hpp"
@@ -25,7 +29,17 @@ public:
             "detect_bac",10, std::bind(&bottle_marker::publishMarkers, this, _1)
         );
 
-         timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
+        planning_scene_diff_publisher_ = this->create_publisher<moveit_msgs::msg::PlanningScene>("planning_scene", 1);
+        
+        RCLCPP_INFO(this->get_logger(),"PLANNING SCENE CONNECTION ESTABLISHED");
+
+        primitive.type = primitive.CYLINDER;
+        primitive.dimensions.resize(3);
+        primitive.dimensions[0] = 0.2;
+        primitive.dimensions[1] = 0.2;
+        primitive.dimensions[2] = 0.3;
+
+        timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
     };
 
 private:
@@ -51,18 +65,41 @@ private:
         std::cout << heard_msg.header.frame_id;
 
         visualization_msgs::msg::MarkerArray marker_message;
-
+        planning_scene.world.collision_objects.clear();
         for (int i=0; i < heard_msg.poses.size(); i++) {
             marker_message.markers.push_back(addMarker(heard_msg.poses[i],i));
+
+            moveit_msgs::msg::AttachedCollisionObject attached_object;
+            attached_object.link_name = "world";
+            /* The header must contain a valid TF frame*/
+            attached_object.object.header.frame_id = "world";
+            /* The id of the object */
+            attached_object.object.id = "box"+i;
+
+            /* A default pose */
+            geometry_msgs::msg::Pose pose;
+            pose.position.x = i*1;
+            pose.position.y = i*1;
+            pose.position.z = i*1;
+            pose.orientation.w = 1.0;
+
+            /* Define a box to be attached */
+
+            attached_object.object.primitives.push_back(primitive);
+            attached_object.object.primitive_poses.push_back(pose);
+            planning_scene.world.collision_objects.push_back(attached_object.object);
         }
         
         RCLCPP_INFO(this->get_logger(),"PUBLISHING POSES");
         publisher_->publish(marker_message);
+        
+        planning_scene.is_diff = true;
+        planning_scene_diff_publisher_->publish(planning_scene);
     };  
 
     visualization_msgs::msg::Marker addMarker(const geometry_msgs::msg::Pose &pose, int i) {
         auto message = visualization_msgs::msg::Marker();
-        message.header.frame_id = "map";
+        message.header.frame_id = "world";
         message.header.stamp = this->now();
         message.ns = "basic_shapes";
         message.id = i;
@@ -85,10 +122,16 @@ private:
         return message;
     }
 
+    moveit_msgs::msg::PlanningScene planning_scene;
+
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_;
     rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr ppublisher_;
     rclcpp::Subscription<vision_ros_msgs::msg::BoundingBoxes>::SharedPtr real_sub_;
+
+    shape_msgs::msg::SolidPrimitive primitive;
+
+    rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr planning_scene_diff_publisher_;
 
     rclcpp::TimerBase::SharedPtr timer;
 };

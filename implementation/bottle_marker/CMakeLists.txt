@@ -13,6 +13,7 @@ find_package(ament_cmake REQUIRED)
 find_package(vision_ros_msgs)
 find_package(geometry_msgs)
 find_package(visualization_msgs)
+find_package(moveit_msgs)
 find_package(rclcpp REQUIRED)
 
 if(BUILD_TESTING)
@@ -34,6 +35,7 @@ ament_target_dependencies(
   geometry_msgs
   visualization_msgs
   vision_ros_msgs
+  moveit_msgs
 )
 
 install(TARGETS 
