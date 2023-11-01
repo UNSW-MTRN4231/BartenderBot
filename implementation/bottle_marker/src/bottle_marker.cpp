@@ -35,9 +35,8 @@ public:
 
         primitive.type = primitive.CYLINDER;
         primitive.dimensions.resize(3);
-        primitive.dimensions[0] = 0.2;
-        primitive.dimensions[1] = 0.2;
-        primitive.dimensions[2] = 0.3;
+        primitive.dimensions[0] = 0.3;
+        primitive.dimensions[1] = 0.1;
 
         timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
     };
