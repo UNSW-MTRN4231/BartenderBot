@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+#ros2 run v4l2_camera v4l2_camera_node --ros-args -p video_device:="/dev/video1"
 import rclpy
 import numpy as np
 from rclpy.node import Node
@@ -67,20 +67,19 @@ class YoloOpencvProcessor(Node):
                 combined_class = f"{yolo_class_inside}_{opencv_class}"
                 self.get_logger().info(f'OpenCV detection (center: {center_x}, {center_y}) is inside a YOLO {yolo_class_inside} bounding box. Combined class: {combined_class}')
                 
-                transform_matrix = np.array([[679.81445, 0, 331.16923],   
-                                             [0, 682.45007, 244.24562]])
+                transform_matrix = np.array([[1, 0, 0],   
+                                             [0, 1, 0]])
 
                 center_matrix = np.array([[center_x, center_y]])
 
                 result = np.matmul(center_matrix, transform_matrix)
                 
-                transformed_x = result[0, 0]
-                transformed_y = result[0, 1]
+                transformed_x = result[0, 0]/1000
+                transformed_y = result[0, 1]/1000
                 
                 bbox_msg = BoundingBox()
                 bbox_msg.x = transformed_x
                 bbox_msg.y = transformed_y
-                bbox_msg.z = 300
                 bbox_msg.angle = 0.0  # Assuming no rotation
                 bbox_msg.color = combined_class
             

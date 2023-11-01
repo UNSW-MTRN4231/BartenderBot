@@ -22,7 +22,7 @@ public:
     transformStamped_.transform.translation.z = 0.78;
 
     tf2::Quaternion q;
-    q.setRPY(M_PI, -M_PI/4, M_PI); // -45 degrees pitch in radians
+    q.setRPY(M_PI, M_PI/4, M_PI); // -45 degrees pitch in radians
     transformStamped_.transform.rotation.x = q.x();
     transformStamped_.transform.rotation.y = q.y();
     transformStamped_.transform.rotation.z = q.z();
