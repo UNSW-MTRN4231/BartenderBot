@@ -33,7 +33,7 @@ class TfBroadcast(Node):
             print(1)
             transform = TransformStamped()
             transform.header.stamp = self.get_clock().now().to_msg()
-            transform.header.frame_id = 'camera_frame'
+            transform.header.frame_id = 'camera_link'
             transform.child_frame_id = bbox.color
 
             pixel_x = bbox.x

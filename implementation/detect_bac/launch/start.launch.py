@@ -31,11 +31,11 @@ def generate_launch_description():
     static_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['1.38', '0.08', '0.78', 'M_PI', 'M_PI/4', 'M_PI', 'world', 'camera_frame'],  # XYZ，RPY 
+        arguments=['1.32', '0.05', '0.76', '1.4', '-0.3', '-2.3', 'base_link', 'camera_link'],  # XYZ，RPY ; red yaw, green pitch, blue roll
 
         name='static_tf_node'
     )
-
+    #'-2.35', '0', '1.76' '1.4', '0', '-2.3'
     ld.add_action(vision_node)
     ld.add_action(detect_node)
     ld.add_action(cam_to_real_node)
