@@ -36,7 +36,7 @@ public:
         primitive.type = primitive.CYLINDER;
         primitive.dimensions.resize(3);
         primitive.dimensions[0] = 0.3;
-        primitive.dimensions[1] = 0.1;
+        primitive.dimensions[1] = 0.05;
 
         timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
     };
@@ -49,9 +49,9 @@ private:
         for (int i = 0; i < 4; i++) {
              auto pose = geometry_msgs::msg::Pose();
 
-             pose.position.x = i*1;
-             pose.position.y = i*1;
-             pose.position.z = i*1;
+             pose.position.x = 0.25+i*0.15;
+             pose.position.y = 0.25+i*0.15;
+             pose.position.z = 0.1;
 
              poses.poses.push_back(pose);
         }
@@ -77,9 +77,9 @@ private:
 
             /* A default pose */
             geometry_msgs::msg::Pose pose;
-            pose.position.x = i*1;
-            pose.position.y = i*1;
-            pose.position.z = i*1;
+            pose.position.x = 0.25+ i*0.15;
+            pose.position.y = 0.25+ i*0.15;
+            pose.position.z = 0.1;
             pose.orientation.w = 1.0;
 
             /* Define a box to be attached */
@@ -111,8 +111,8 @@ private:
         message.pose.orientation.y = 0.0;
         message.pose.orientation.z = 0.0;
         message.pose.orientation.w = 1.0;
-        message.scale.x = 0.2;
-        message.scale.y = 0.2;
+        message.scale.x = 0.1;
+        message.scale.y = 0.1;
         message.scale.z = 0.3;
         message.color.r = 1.0f;
         message.color.g = 0.0f;
