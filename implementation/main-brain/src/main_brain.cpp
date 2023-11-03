@@ -68,7 +68,7 @@ class main_brain : public rclcpp::Node {
         instruction.command = command;
         for (size_t i; i < sizeof(items)/sizeof(std_msgs::msg::String); i++) {
             std::cout << "Ingredient" << std::endl;
-            instruction.item_names[i] = items[i];
+            //instruction.item_names[i] = items[i];
             instruction.item_frames[i] = frames[i];
         }
         
