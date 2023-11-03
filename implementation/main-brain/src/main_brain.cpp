@@ -26,11 +26,11 @@ class main_brain : public rclcpp::Node {
         subscription_ = this->create_subscription<std_msgs::msg::String>(
         "keyboard_input", 10, std::bind(&main_brain::executeCommand, this, _1));
 
-        continue_sub_ = this->create_subscription<std_msgs::msg::String>(
-        "ready", 10, std::bind(&main_brain::checkArm, this, _1));
+        ready_sub_ = this->create_subscription<std_msgs::msg::String>(
+        "ready", 10, std::bind(&main_brain::executeCommand, this, _1));
 
         for (auto& checkDrink : drinkOptions) {
-        std::cout << "NEXT DRINK" << std::endl;
+        std::cout << "------\nNEW DRINK\n------" << std::endl;
         std::cout << checkDrink.name << std::endl;
             for (auto& ing : checkDrink.ingredients) {
                 std::cout << ing << std::endl;
@@ -48,9 +48,13 @@ class main_brain : public rclcpp::Node {
 
     rclcpp::Publisher<brain_msgs::msg::Command>::SharedPtr publisher_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr continue_sub_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ready_sub_;
+
+    int state = -1;
 
     bool armReady = true;
+    struct drinkTemplate chosenDrink;
+    int ingredientIndex = 0;
 
     std::vector<struct drinkTemplate> drinkOptions = {
         drinkTemplate{"shot",{"vodka"}},
@@ -58,82 +62,100 @@ class main_brain : public rclcpp::Node {
         drinkTemplate{"margarita",{"tequila","lim.juice","lem.juice"}}
     };
 
-    void checkArm(const std_msgs::msg::String::SharedPtr read) {
-        armReady = !armReady;
-    }
-
-    void sendCommand(std_msgs::msg::String command, std_msgs::msg::String items[], std_msgs::msg::String frames[]) {
+    void sendCommand(std::string command, std::vector<int> heights, std::vector<std::string> frames) {
         brain_msgs::msg::Command instruction;
-        armReady = !armReady;
-        instruction.command = command;
-        for (size_t i; i < sizeof(items)/sizeof(std_msgs::msg::String); i++) {
+        instruction.command.data = command;
+        for (size_t i=0; i < heights.size();i++) {
             std::cout << "Ingredient" << std::endl;
-            //instruction.item_names[i] = items[i];
-            instruction.item_frames[i] = frames[i];
+            instruction.item_heights[i].data = heights.at(i);
+            instruction.item_frames[i].data = frames.at(i);
         }
+        std::cout << instruction.item_heights[0].data << ", " << instruction.item_frames[0].data << std::endl;
         
         publisher_->publish(instruction);
+        std::cout << "Ingredient" << std::endl;
     }
 
     void fillShaker(struct drinkTemplate& drink) {
-        int drinkNum = 0;
         int numIngredients = drink.ingredients.size();
-        std_msgs::msg::String instruction;
-        std_msgs::msg::String ingredientName[1]; 
-        std_msgs::msg::String ingredientFrame[1];
-        instruction.data = "fill";
-        std::cout << armReady;
-        while (drinkNum <= numIngredients) {
-            if (armReady) {
-                ingredientName[0].data = {drink.ingredients.at(drinkNum)};
-                ingredientFrame[0].data = {drink.ingredients.at(drinkNum)};
-                sendCommand(instruction, ingredientName, ingredientFrame);
-                drinkNum++;
-            }
+        std::string instruction = "fill";
+        std::vector<int> ingredientHeights;
+        std::vector<std::string> ingredientFrames;
+        
+        if (ingredientIndex < numIngredients) {
+            //TODO: Pull object height from cams
+            ingredientHeights.push_back(5);
+            ingredientFrames.push_back(drink.ingredients.at(ingredientIndex));
+            std::cout << ingredientHeights.at(0) << ", " << ingredientFrames.at(0) << std::endl;
+            sendCommand(instruction, ingredientHeights, ingredientFrames);
+            ingredientIndex++;
+        } else {
+            state = 2;
         }
+        
     }
 
-    // void shakeDrink() {
-    //     std::cout << "shaking" << std::endl;
-    // };
+    void shakeDrink() {
+        std::cout << "shaking" << std::endl;
+        std::string instruction = "shake";
+        std::vector<int> ingredientHeights; 
+        std::vector<std::string> ingredientFrames;
+        sendCommand(instruction,ingredientHeights ,ingredientFrames);
+    };
 
-    // void serveDrink() {
-    //     std::cout << "serving" << std::endl;
-    // }
+    void serveDrink() {
+        std::cout << "serving" << std::endl;
+        std::string instruction = "serve";
+        //TODO: Pull object height from cams
+        std::vector<int> ingredientHeights = {5,5,5}; 
+        std::vector<std::string> ingredientFrames = {"glass1","glass2","glass3"};
+        sendCommand(instruction,ingredientHeights ,ingredientFrames);
+    }
 
     void executeCommand(const std_msgs::msg::String::SharedPtr msg) {
         std::string drink;
-        
-        
-        if (msg->data == "space") {
-            std::cout << "input: ";
-            std::cin >> drink;
-            std::cout << drink << std::endl;
-        }
-        struct drinkTemplate chosen;
-        for (auto& checkDrink : drinkOptions) {
-            if (checkDrink.name == drink) {
-                std::cout << "Drink found!" << std::endl;
-                chosen = checkDrink;
-                for (auto& ing : checkDrink.ingredients) {
-                    std::cout << ing << std::endl;
+        switch (state) {
+            
+            case -1:
+                
+                if (msg->data == "space") {
+                    std::cout << "input: ";
+                    std::cin >> drink;
+                    std::cout << drink << std::endl;
+                    
+                    for (auto& checkDrink : drinkOptions) {
+                        if (checkDrink.name == drink) {
+                            std::cout << "Drink found!" << std::endl;
+                            chosenDrink = checkDrink;
+                            for (auto& ing : checkDrink.ingredients) {
+                                std::cout << ing << std::endl;
+                            }
+                            break;
+                        }
+                    }
+                    state = 1;
+                    fillShaker(chosenDrink);
                 }
                 break;
-            }
+            case 1:
+                fillShaker(chosenDrink);
+                break;
+            case 2:
+                std::cout << "SHAKE" << std::endl;
+                state = 3;
+                break;
+            case 3:
+                std::cout << "SERVE" << std::endl;
+                state = 5;
+                break;
+            case 5:
+                std::cout << "DRINK DONE" << std::endl;
+                state = -1;
+                break;
+
         }
-        
-        std::cout << "BEGIN FILL" << std::endl;
-        fillShaker(chosen);
-        std::cout << "END FILL" << std::endl;
 
-        // std::cout << "BEGIN SHAKE" << std::endl;
-        // shakeDrink();
-        // std::cout << "END SHAKE" << std::endl;
 
-        // std::cout << "BEGIN SERVE" << std::endl;
-        // serveDrink();
-        // std::cout << "END SERVE" << std::endl;
-        
     }
     
 };

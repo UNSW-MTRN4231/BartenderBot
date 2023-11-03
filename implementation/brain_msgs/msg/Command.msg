@@ -7,4 +7,4 @@ std_msgs/String command
 std_msgs/Float32[] item_heights
 
 #Vector of item's coord frame
-std_msgs/String[] item_frames
+std_msgs/String[10] item_frames
