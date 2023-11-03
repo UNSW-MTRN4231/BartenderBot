@@ -187,28 +187,17 @@ class test_brain : public rclcpp::Node {
       home();
       grip(0);
 
-      tf2::Quaternion q;
-      q.setRPY(-M_PI, 0+M_PI/4 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
-      q.setRPY(-M_PI, 0-M_PI/4 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
-      q.setRPY(-M_PI, 0, M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
+      curr_pose.position.z += 0.10;
+      send_pose("linear");
+
+      curr_pose.position.x += 0.10;
+      send_pose("linear");
+
+      curr_pose.position.z -= 0.10;
+      send_pose("linear");
+
+      curr_pose.position.x -= 0.10;
+      send_pose("linear");
 
      sleep(100.0); 
     }

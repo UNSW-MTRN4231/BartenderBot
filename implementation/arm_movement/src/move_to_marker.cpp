@@ -51,7 +51,7 @@ class move_to_marker : public rclcpp::Node
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
       
-      move_group_interface->setPlanningTime(20.0);
+      move_group_interface->setPlanningTime(10.0);
       move_group_interface->setNumPlanningAttempts(1);
       move_group_interface->setPlannerId("RRTstarkConfigDefault");
 
@@ -70,10 +70,10 @@ class move_to_marker : public rclcpp::Node
 
       // Generate path constraint obstacles
 
-      auto col_object_backConst = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.10, 0.5, frame_id, "backConst");
-      auto col_object_sideConst = generateCollisionObject( 0.04, 1.2, 1.0, -0.25, 0.25, 0.5, frame_id, "sideConst");
+      //auto col_object_backConst = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.10, 0.5, frame_id, "backConst");
+      //auto col_object_sideConst = generateCollisionObject( 0.04, 1.2, 1.0, -0.25, 0.25, 0.5, frame_id, "sideConst");
 
-      RCLCPP_INFO(this->get_logger(), "insert constraints");
+      //RCLCPP_INFO(this->get_logger(), "insert constraints");
 
 
       moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -82,8 +82,8 @@ class move_to_marker : public rclcpp::Node
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
       planning_scene_interface.applyCollisionObject(col_object_table);
       // Apply constraints as a collision object
-      planning_scene_interface.applyCollisionObject(col_object_backConst);
-      planning_scene_interface.applyCollisionObject(col_object_sideConst);
+      //planning_scene_interface.applyCollisionObject(col_object_backConst);
+      //planning_scene_interface.applyCollisionObject(col_object_sideConst);
 
       RCLCPP_INFO(this->get_logger(), "constructed");
     }
@@ -119,11 +119,9 @@ class move_to_marker : public rclcpp::Node
     void executeLinearMove(const geometry_msgs::msg::Pose &msg) const {
       //TODO NEW CHECK FOR LEGAL POSE
       if (true) {
-        auto success = false;
 
         RCLCPP_INFO(this->get_logger(), "Starting linear move");
         
-        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
         
         // Cartesian Paths
         std::vector<geometry_msgs::msg::Pose> waypoints;
@@ -131,22 +129,19 @@ class move_to_marker : public rclcpp::Node
         waypoints.push_back(targetPose1);
 
         moveit_msgs::msg::RobotTrajectory trajectory;
-        double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
-        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
+        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+        double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
 
         RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
 
-        sleep(15.0);
-
-        success = static_cast<bool>(move_group_interface->plan(planMessage));
-        RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1
-        if (success) {
-          move_group_interface->execute(planMessage);
+        if (fraction == 1) {
+          move_group_interface->execute(trajectory);
           RCLCPP_INFO(this->get_logger(), "Done moving");
 
         } else {
-          std::cout <<  "Planning failed!" << std::endl;
+          std::cout <<  "Planning failed! \nExecuting free move" << std::endl;
+          executeFreeMove(msg);
         }
 
       } 
