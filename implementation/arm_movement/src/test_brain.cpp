@@ -155,19 +155,19 @@ class test_brain : public rclcpp::Node {
     
     // pours the bottle at location
     void pour(float offset) {
-        offset = offset/2;
         // moves accross offset width
         curr_pose.position.x += offset;
-        send_pose();
+        send_pose("linear");
         
         // pours drink
         tf2::Quaternion q;
-        q.setRPY(M_PI/4, 0 , 0); // 45 degrees roll in rad
+        q.setRPY(M_PI/2, M_PI/4 , M_PI/2); // 45 degrees roll in rad
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
         send_pose();
+        q.setRPY(-M_PI, 0 , M_PI/2); // 45 degrees roll in rad
         curr_pose.orientation.x = 0;
         curr_pose.orientation.y = 0;
         curr_pose.orientation.z = 0;
@@ -175,8 +175,8 @@ class test_brain : public rclcpp::Node {
         send_pose();
 
         // returns to original position
-        curr_pose.position.x -=offset;
-        send_pose();
+        curr_pose.position.x -= offset;
+        send_pose("linear");
     }
 
     
@@ -187,17 +187,7 @@ class test_brain : public rclcpp::Node {
       home();
       grip(0);
 
-      curr_pose.position.z += 0.10;
-      send_pose("linear");
-
-      curr_pose.position.x += 0.10;
-      send_pose("linear");
-
-      curr_pose.position.z -= 0.10;
-      send_pose("linear");
-
-      curr_pose.position.x -= 0.10;
-      send_pose("linear");
+      pour(0.15);
 
      sleep(100.0); 
     }
