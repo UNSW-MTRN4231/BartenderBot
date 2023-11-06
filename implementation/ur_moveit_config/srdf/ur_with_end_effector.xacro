@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<robot name="ur_with_end_effector" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+  <!-- UR5e robot arm -->
+  <!-- URDF won't build if following args aren't defined. -->
+  <xacro:arg name="name" default="ur5"/>
+  <xacro:arg name="ur_type" default="ur5"/>
+  <xacro:include filename="$(find ur_description)/urdf/ur.urdf.xacro"/>
+
+  <!-- end effector -->
+  <xacro:include filename="$(find end_effector_description)/urdf/end_effector.urdf" />
+
+  <!-- Coupler between arm and end effector -->
+  <joint name="ur5_end_effector_coupler_joint" type="fixed">
+    <parent link="tool0"/>
+    <child link="mount"/>
+  </joint>
+</robot>
