@@ -85,6 +85,7 @@ class arm_brain : public rclcpp::Node {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
       }
+      return t;
     }
 
     //gets pose of object
@@ -272,7 +273,7 @@ class arm_brain : public rclcpp::Node {
       // adding ingredient
       if (msg.command.data == "fill") {
         //need repeat
-        for (auto i = 0; i < size(msg.item_frames); i++) {
+        for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
           old_pose = get_pose(msg.item_frames[i].data);
           pickup(old_pose); // to bottle
           move("big_shaker"); //to shaker
@@ -294,7 +295,7 @@ class arm_brain : public rclcpp::Node {
         pickup(old_pose); // to bottle
           
         //need repeat
-        for (auto i = 0; i < size(msg.item_frames); i++) {
+        for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
           move(msg.item_frames[i].data);
           pour(msg.item_heights[i].data);
         }
