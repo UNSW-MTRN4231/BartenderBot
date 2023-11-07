@@ -114,10 +114,12 @@ class test_brain : public rclcpp::Node {
       if (toggle == 0) {
         grip.data  = "open";
         toggle = 1;
+        RCLCPP_INFO(this->get_logger(), "Claw Open");
       }
       else if(toggle == 1) {
         grip.data = "close";
         toggle = 0;
+        RCLCPP_INFO(this->get_logger(), "Claw Close");
       }
       arduino_publisher_->publish(grip);
     }
@@ -135,10 +137,12 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose("home");
+      RCLCPP_INFO(this->get_logger(), "Moving to home position");
     }
 
     void pickup(geometry_msgs::msg::Pose pose) {
       tf2::Quaternion q;
+      RCLCPP_INFO(this->get_logger(), "Starting pickup");
       if (pose.position.y > 0.3) {
         curr_pose.position.y = pose.position.y - 0.15;
         q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
@@ -242,7 +246,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose();
-
+      RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
       if (curr_pose.position.y > 0.3) {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
@@ -260,8 +264,9 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose();
+      RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);
-
+      
 
       q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // return to upright
       curr_pose.orientation.x = q.x();
