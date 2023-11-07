@@ -159,7 +159,7 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to ball point
-        move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y, msg.orientation.z, msg.orientation.w);
+        move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1

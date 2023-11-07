@@ -245,6 +245,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
+      curr_pose.orientation.w = q.w();
       send_pose();
       RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
       if (curr_pose.position.y > 0.3) {
@@ -263,7 +264,8 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      curr_pose.orientation.w = M_PI/4;
+      send_pose("rotate");
       RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);
       
@@ -272,8 +274,8 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose();
+      curr_pose.orientation.w = -M_PI/2;
+      send_pose("rotate");
     }
 
     
