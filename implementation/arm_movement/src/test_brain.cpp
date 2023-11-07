@@ -57,7 +57,7 @@ class test_brain : public rclcpp::Node {
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
 
     void send_pose() {
@@ -66,7 +66,7 @@ class test_brain : public rclcpp::Node {
       msg.header.frame_id = "free";
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
     
     // toggle gripper
@@ -98,6 +98,31 @@ class test_brain : public rclcpp::Node {
       send_pose("home");
     }
 
+    void pickup(geometry_msgs::msg::Pose pose) {
+      tf2::Quaternion q;
+      if (pose.position.y > 0.6) {
+        curr_pose.position.y = curr_pose.position.y - 0.15;
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      } else {
+        curr_pose.position.y = curr_pose.position.y + 0.15;
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI)
+      }
+      curr_pose.position.x = curr_pose.position.x;
+      curr_pose.position.z = curr_pose.position.z;
+      
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
+
+      curr_pose.position.y = curr_pose.position.y;
+      send_pose("linear");
+      grip(1);
+
+      curr_pose.position.z +=0.15;
+      send_pose("linear");
+    }
 
     // combines both parts of shaker and mixes, then dissasembles
     void shake(geometry_msgs::msg::Pose big, geometry_msgs::msg::Pose small) {
@@ -153,29 +178,31 @@ class test_brain : public rclcpp::Node {
       grip(0);
     }
     
-    // pours the bottle at location
+    // pours the bottle at current location
     void pour(float offset) {
+        offset = offset/2/sqrt(2);
         // moves accross offset width
-        curr_pose.position.x += offset;
+        curr_pose.position.y -= offset;
         send_pose("linear");
         
         // pours drink
         tf2::Quaternion q;
-        q.setRPY(M_PI/2, M_PI/4 , M_PI/2); // 45 degrees roll in rad
+        q.setRPY(M_PI/2, -M_PI/4 , M_PI); // 45 degrees roll in rad
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
         send_pose();
-        q.setRPY(-M_PI, 0 , M_PI/2); // 45 degrees roll in rad
-        curr_pose.orientation.x = 0;
-        curr_pose.orientation.y = 0;
-        curr_pose.orientation.z = 0;
-        curr_pose.orientation.w = 0;
+        sleep(2);
+        q.setRPY(0, M_PI/2 , M_PI/2); // 45 degrees roll in rad
+        curr_pose.orientation.x = q.x();
+        curr_pose.orientation.y = q.y();
+        curr_pose.orientation.z = q.z();
+        curr_pose.orientation.w = q.w();
         send_pose();
 
         // returns to original position
-        curr_pose.position.x -= offset;
+        curr_pose.position.y += offset;
         send_pose("linear");
     }
 
@@ -186,8 +213,19 @@ class test_brain : public rclcpp::Node {
       //moves to home
       home();
       grip(0);
+      geometry_msgs::msg::Pose test;
+      test.position.x = 0.58835;
+      test.position.y = 0.133;
+      test.position.z = 0.37212;
+      
+      tf2::Quaternion q;
+      q.setRPY(-M_PI, 0 , M_PI/2);
+      test.orientation.x = q.x();
+      test.orientation.y = q.y();
+      test.orientation.z = q.z();
+      test.orientation.w = q.w();
 
-      pour(0.15);
+      pickup(test);
 
      sleep(100.0); 
     }

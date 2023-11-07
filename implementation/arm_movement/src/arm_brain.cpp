@@ -5,6 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 #include "brain_msgs/msg/command.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -28,7 +29,7 @@ class arm_brain : public rclcpp::Node {
       subscription_ = this->create_subscription<brain_msgs::msg::Command>("command", 10, std::bind(&arm_brain::brain, this, _1));
 
       // Initialise the pose publisher
-      pose_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>("move_to", 10);
+      pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("move_to", 10);
 
       // Initialise the brain ready publisher
       ready_publisher_ = this->create_publisher<std_msgs::msg::String>("ready", 10);
@@ -60,10 +61,13 @@ class arm_brain : public rclcpp::Node {
       msg.position.z = tf.transform.translation.z;
       
       // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
-      msg.orientation.x = tf.transform.rotation.x;
-      msg.orientation.y = tf.transform.rotation.y;
-      msg.orientation.z = tf.transform.rotation.z;
-      msg.orientation.w = tf.transform.rotation.w;
+      
+      tf2::Quaternion q;
+      q.setRPY(-M_PI, 0 , M_PI/2);
+      msg.orientation.x = q.x();
+      msg.orientation.y = q.y();
+      msg.orientation.z = q.z();
+      msg.orientation.w = q.w();
       
       return msg;
     }
@@ -89,10 +93,22 @@ class arm_brain : public rclcpp::Node {
     }
     
     //sends pose to ur
+    void send_pose(std::string type) {
+      geometry_msgs::msg::PoseStamped msg;
+      msg.pose = curr_pose;
+      msg.header.frame_id = type;
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      pose_publisher_->publish(msg);
+      sleep(10.0);
+    }
+
     void send_pose() {
-      geometry_msgs::msg::Pose pose = curr_pose;
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", pose.position.x, pose.position.y, pose.position.z);
-      pose_publisher_->publish(pose);
+      geometry_msgs::msg::PoseStamped msg;
+      msg.pose = curr_pose;
+      msg.header.frame_id = "free";
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      pose_publisher_->publish(msg);
+      sleep(10.0);
     }
     
     // toggle gripper
@@ -121,7 +137,7 @@ class arm_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("home");
     }
 
     void move(std::string item) {
@@ -192,7 +208,7 @@ class arm_brain : public rclcpp::Node {
       grip(0);
     }
     
-    // pours the bottle at location
+    // pours the bottle at current location
     void pour(float offset) {
         offset = offset/2;
         // moves accross offset width
@@ -219,7 +235,6 @@ class arm_brain : public rclcpp::Node {
     }
 
     
-
     void brain(const brain_msgs::msg::Command &msg) {
       
       //moves to home
@@ -274,7 +289,7 @@ class arm_brain : public rclcpp::Node {
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
     rclcpp::Subscription<brain_msgs::msg::Command>::SharedPtr subscription_;
-    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ready_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
     geometry_msgs::msg::Pose curr_pose;
