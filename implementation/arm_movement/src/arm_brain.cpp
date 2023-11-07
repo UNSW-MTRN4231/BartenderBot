@@ -147,11 +147,38 @@ class arm_brain : public rclcpp::Node {
       }
       else {
         curr_pose = get_pose(item);
+        curr_pose.position.z = 0.3;
       }
       
-      send_pose();
+      send_pose("linear");
 
       //TODO: CHECK IF OBJECT IS STILL IN LOCATION -> MOVE AGAIN
+    }
+
+    void pickup(geometry_msgs::msg::Pose pose) {
+      tf2::Quaternion q;
+      if (pose.position.y > 0.3) {
+        curr_pose.position.y = pose.position.y - 0.15;
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        curr_pose.position.y = pose.position.y + 0.15;
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
+      curr_pose.position.x = pose.position.x;
+      curr_pose.position.z = pose.position.z;
+      
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
+
+      curr_pose.position.y = pose.position.y;
+      send_pose("linear");
+      grip(1);
+
+      curr_pose.position.z = 0.3;
+      send_pose("linear");
     }
 
     // combines both parts of shaker and mixes, then dissasembles
@@ -246,9 +273,8 @@ class arm_brain : public rclcpp::Node {
       if (msg.command.data == "fill") {
         //need repeat
         for (auto i = 0; i < size(msg.item_frames); i++) {
-          move(msg.item_frames[i].data); // to bottle
-          old_pose = curr_pose;
-          grip(1);  
+          old_pose = get_pose(msg.item_frames[i].data);
+          pickup(old_pose); // to bottle
           move("big_shaker"); //to shaker
           pour(msg.item_heights[i].data);
           move("return"); //to old bottle;
@@ -264,9 +290,8 @@ class arm_brain : public rclcpp::Node {
       // pouring cocktail
       else if (msg.command.data == "pour") {
         
-        move("big_shaker"); //to shaker
-        old_pose = curr_pose;
-        grip(1);
+        old_pose = get_pose("big_shaker");
+        pickup(old_pose); // to bottle
           
         //need repeat
         for (auto i = 0; i < size(msg.item_frames); i++) {

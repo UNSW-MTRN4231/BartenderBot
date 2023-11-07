@@ -151,7 +151,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.position.z += 0.3;
       send_pose("linear");
 
-      tf2::Quaternion q;
+    
       q.setRPY(M_PI, 0 , M_PI/2);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
@@ -166,7 +166,7 @@ class test_brain : public rclcpp::Node {
       send_pose();
 
       // places back down and dissasembles
-      curr_pose.position. -= 0.3;
+      curr_pose.position.z -= 0.3;
       send_pose("linear");
       grip(0);
 
@@ -177,7 +177,6 @@ class test_brain : public rclcpp::Node {
       curr_pose.position.z += 0.10;
       send_pose("linear");
 
-      tf2::Quaternion q;
       q.setRPY(M_PI, 0 , M_PI/2);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
