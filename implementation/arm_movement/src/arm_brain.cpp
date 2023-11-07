@@ -148,7 +148,7 @@ class arm_brain : public rclcpp::Node {
       }
       else {
         curr_pose = get_pose(item);
-        curr_pose.position.z = 0.3;
+        curr_pose.position.z = 0.37;
       }
       
       send_pose("linear");

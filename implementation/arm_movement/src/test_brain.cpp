@@ -49,7 +49,46 @@ class test_brain : public rclcpp::Node {
     }
 
   private:
+    //Function to generate a target position message
+    geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
+      geometry_msgs::msg::Pose msg;
     
+      msg.position.x = tf.transform.translation.x;
+      msg.position.y = tf.transform.translation.y;
+      msg.position.z = tf.transform.translation.z;
+      
+      // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
+      
+      tf2::Quaternion q;
+      q.setRPY(-M_PI, 0 , M_PI/2);
+      msg.orientation.x = q.x();
+      msg.orientation.y = q.y();
+      msg.orientation.z = q.z();
+      msg.orientation.w = q.w();
+      
+      return msg;
+    }
+
+    //requests transform frame for object
+    geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
+      // Check if the transformation is between "world" and "req_frame"
+      std::string fromFrameRel = "world";
+      std::string toFrameRel = req_frame;
+      geometry_msgs::msg::TransformStamped t;
+
+      try {
+          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+          RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+          
+      }
+      return t;
+    }
+
+    //gets pose of object
+    geometry_msgs::msg::Pose get_pose(std::string item_frame) {
+        return generatePoseFromTransform(tfCallback(item_frame));
+    }
     //sends pose to ur
     void send_pose(std::string type) {
       geometry_msgs::msg::PoseStamped msg;
@@ -108,7 +147,7 @@ class test_brain : public rclcpp::Node {
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
       }
       curr_pose.position.x = pose.position.x;
-      curr_pose.position.z = pose.position.z;
+      curr_pose.position.z = pose.position.z + 0.07;
       
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
@@ -120,7 +159,7 @@ class test_brain : public rclcpp::Node {
       send_pose("linear");
       grip(1);
 
-      curr_pose.position.z = 0.3;
+      curr_pose.position.z = 0.37;
       send_pose("linear");
     }
 
@@ -194,7 +233,7 @@ class test_brain : public rclcpp::Node {
     
     // pours the bottle at current location
     void pour(float offset) {
-      offset = offset/2/sqrt(2);
+      offset = (0.07-offset/2)/sqrt(2);
         
       tf2::Quaternion q;
       q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // facing computer
