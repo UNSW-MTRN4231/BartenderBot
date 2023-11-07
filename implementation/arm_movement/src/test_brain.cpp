@@ -197,7 +197,7 @@ class test_brain : public rclcpp::Node {
       offset = offset/2/sqrt(2);
         
       tf2::Quaternion q;
-      q.setRPY(M_PI/2, -M_PI/4 , M_PI); // facing computer
+      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // facing computer
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -208,12 +208,12 @@ class test_brain : public rclcpp::Node {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
         send_pose("linear");
-        q.setRPY(M_PI/2, -M_PI/4 , M_PI); // 45 degrees roll in rad
+        q.setRPY(-M_PI/2, M_PI/4 , M_PI/2); // pour towards
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
         send_pose("linear");
-        q.setRPY(M_PI/2, -M_PI/4 , M_PI); // 45 degrees roll in rad
+        q.setRPY(M_PI/2, M_PI/4 , -M_PI/2); // pour away
       }
       // pours drink
       curr_pose.orientation.x = q.x();
@@ -224,7 +224,7 @@ class test_brain : public rclcpp::Node {
       sleep(2);
 
 
-      q.setRPY(0, M_PI/2 , M_PI/2); // return to upright
+      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // return to upright
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
