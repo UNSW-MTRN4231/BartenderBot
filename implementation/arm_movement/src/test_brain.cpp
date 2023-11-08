@@ -241,7 +241,7 @@ class test_brain : public rclcpp::Node {
       offset = (0.07-offset/2)/sqrt(2);
         
       tf2::Quaternion q;
-      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // facing computer
+      q.setRPY(0, -M_PI/2, -M_PI); // facing computer
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -252,18 +252,20 @@ class test_brain : public rclcpp::Node {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
         send_pose("linear");
-        q.setRPY(M_PI/2, M_PI/4 , -M_PI/2); // pour towards
+        curr_pose.orientation.x = 0.33666;
+        curr_pose.orientation.y = 0.6128;
+        curr_pose.orientation.z = 0.33811;
+        curr_pose.orientation.w = 0.6299; // pour towards
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
         send_pose("linear");
-        q.setRPY(-M_PI/2, M_PI/4 , M_PI/2); // pour away
+        curr_pose.orientation.x = -0.1913;
+        curr_pose.orientation.y = 0.6727;
+        curr_pose.orientation.z = -0.2023;
+        curr_pose.orientation.w = 0.6855; // pour away
       }
       // pours drink
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
       //curr_pose.orientation.w = M_PI/4;
       send_pose();
       RCLCPP_INFO(this->get_logger(), "Pouring...");
@@ -289,29 +291,10 @@ class test_brain : public rclcpp::Node {
       test.position.x = 0.68835;
       test.position.y = 0.433;
       test.position.z = 0.07212;
-      
-      tf2::Quaternion q;
-      q.setRPY(-2*M_PI/3, -M_PI/2 , 2*M_PI/3);
-      //normal
-      curr_pose.orientation.x = 0.707;
-      curr_pose.orientation.y = 0;
-      curr_pose.orientation.z = 0.707;
-      curr_pose.orientation.w = 0;
 
-      //away
-      curr_pose.orientation.x = -0.1913;
-      curr_pose.orientation.y = 0.6727;
-      curr_pose.orientation.z = -0.2023;
-      curr_pose.orientation.w = 0.6855;
-      //towards
-      curr_pose.orientation.x = 0.33666;
-      curr_pose.orientation.y = 0.6128;
-      curr_pose.orientation.z = 0.33811;
-      curr_pose.orientation.w = 0.6299;
-      send_pose();
-      //pickup(test);
+      pickup(test);
       sleep(2);
-      //pour(0.1);
+      pour(0.1);
 
      sleep(100.0); 
     }
