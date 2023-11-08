@@ -48,7 +48,7 @@
   </link>
 
   <!-- joint 1 (Base & L1) -->
-  <joint name="left_gripper_joint" type="continuous">
+  <joint name="left_gripper_joint" type="fixed">
     <parent link="mount"/>
     <child link="left_gripper"/>
     <axis xyz="1 0 0"/>
@@ -56,7 +56,7 @@
   </joint>
 
   <!-- joint 1 (Base & L1) -->
-  <joint name="right_gripper_joint" type="continuous">
+  <joint name="right_gripper_joint" type="fixed">
     <parent link="mount"/>
     <child link="right_gripper"/>
     <axis xyz="1 0 0"/>
