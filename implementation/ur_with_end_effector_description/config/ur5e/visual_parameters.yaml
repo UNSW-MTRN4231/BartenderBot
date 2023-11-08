@@ -83,7 +83,7 @@ mesh_files:
         package: end_effector_description
         path: meshes/Base.STL
 
-  wrist_3:
+  left_gripper:
     visual:
       mesh:
         package: end_effector_description
@@ -93,7 +93,7 @@ mesh_files:
         package: end_effector_description
         path: meshes/Claw.STL
 
-  wrist_3:
+  right_gripper:
     visual:
       mesh:
         package: end_effector_description
