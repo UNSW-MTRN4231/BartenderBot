@@ -103,7 +103,8 @@ class test_brain : public rclcpp::Node {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = "free";
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
       sleep(20.0);
     }
@@ -126,12 +127,12 @@ class test_brain : public rclcpp::Node {
 
     //returns robot to home position
     void home() {
-      curr_pose.position.x = 0.58835;
-      curr_pose.position.y = 0.133;
-      curr_pose.position.z = 0.37212;
+      curr_pose.position.x = 0.58827;
+      curr_pose.position.y = 0.13316;
+      curr_pose.position.z = 0.37190;
       
       tf2::Quaternion q;
-      q.setRPY(-M_PI, 0 , M_PI/2);
+      q.setRPY(-2*M_PI/3, -M_PI/2 , 2*M_PI/3);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -245,27 +246,26 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      curr_pose.orientation.w = q.w();
       send_pose();
       RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
       if (curr_pose.position.y > 0.3) {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
         send_pose("linear");
-        q.setRPY(-M_PI/2, M_PI/4 , M_PI/2); // pour towards
+        q.setRPY(M_PI/2, M_PI/4 , -M_PI/2); // pour towards
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
         send_pose("linear");
-        q.setRPY(M_PI/2, M_PI/4 , -M_PI/2); // pour away
+        q.setRPY(-M_PI/2, M_PI/4 , M_PI/2); // pour away
       }
       // pours drink
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      curr_pose.orientation.w = M_PI/4;
-      send_pose("rotate");
+      //curr_pose.orientation.w = M_PI/4;
+      send_pose();
       RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);
       
@@ -274,8 +274,8 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = -M_PI/2;
-      send_pose("rotate");
+      curr_pose.orientation.w = q.w();
+      send_pose();
     }
 
     
@@ -286,20 +286,32 @@ class test_brain : public rclcpp::Node {
       home();
       grip(0);
       geometry_msgs::msg::Pose test;
-      test.position.x = 0.48835;
-      test.position.y = 0.233;
-      test.position.z = 0.17212;
+      test.position.x = 0.68835;
+      test.position.y = 0.433;
+      test.position.z = 0.07212;
       
       tf2::Quaternion q;
-      q.setRPY(-M_PI, 0 , M_PI/2);
-      test.orientation.x = q.x();
-      test.orientation.y = q.y();
-      test.orientation.z = q.z();
-      test.orientation.w = q.w();
+      q.setRPY(-2*M_PI/3, -M_PI/2 , 2*M_PI/3);
+      //normal
+      curr_pose.orientation.x = 0.707;
+      curr_pose.orientation.y = 0;
+      curr_pose.orientation.z = 0.707;
+      curr_pose.orientation.w = 0;
 
-      pickup(test);
+      //away
+      curr_pose.orientation.x = -0.1913;
+      curr_pose.orientation.y = 0.6727;
+      curr_pose.orientation.z = -0.2023;
+      curr_pose.orientation.w = 0.6855;
+      //towards
+      curr_pose.orientation.x = 0.33666;
+      curr_pose.orientation.y = 0.6128;
+      curr_pose.orientation.z = 0.33811;
+      curr_pose.orientation.w = 0.6299;
+      send_pose();
+      //pickup(test);
       sleep(2);
-      pour(0.1);
+      //pour(0.1);
 
      sleep(100.0); 
     }

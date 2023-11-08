@@ -70,10 +70,10 @@ class move_to_marker : public rclcpp::Node
 
       // Generate path constraint obstacles
 
-      //auto col_object_backConst = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.10, 0.5, frame_id, "backConst");
-      //auto col_object_sideConst = generateCollisionObject( 0.04, 1.2, 1.0, -0.25, 0.25, 0.5, frame_id, "sideConst");
+      auto col_object_backConst = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.10, 0.5, frame_id, "backConst");
+      auto col_object_sideConst = generateCollisionObject( 0.04, 1.2, 1.0, -0.25, 0.25, 0.5, frame_id, "sideConst");
 
-      //RCLCPP_INFO(this->get_logger(), "insert constraints");
+      RCLCPP_INFO(this->get_logger(), "insert constraints");
 
 
       moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -82,8 +82,8 @@ class move_to_marker : public rclcpp::Node
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
       planning_scene_interface.applyCollisionObject(col_object_table);
       // Apply constraints as a collision object
-      //planning_scene_interface.applyCollisionObject(col_object_backConst);
-      //planning_scene_interface.applyCollisionObject(col_object_sideConst);
+      planning_scene_interface.applyCollisionObject(col_object_backConst);
+      planning_scene_interface.applyCollisionObject(col_object_sideConst);
 
       RCLCPP_INFO(this->get_logger(), "constructed");
     }
@@ -122,7 +122,6 @@ class move_to_marker : public rclcpp::Node
 
         RCLCPP_INFO(this->get_logger(), "Starting linear move");
         
-        
         // Cartesian Paths
         std::vector<geometry_msgs::msg::Pose> waypoints;
         geometry_msgs::msg::Pose targetPose1 = msg;
@@ -159,7 +158,8 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to ball point
-        move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
+        move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y,msg.orientation.z,msg.orientation.w);
+        //move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1
@@ -185,7 +185,8 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to home
-        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
+        //std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
+        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -15.0*M_PI/180, 90.0*M_PI/180, 90.0*M_PI/180};
         move_group_interface->setJointValueTarget(joints);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
