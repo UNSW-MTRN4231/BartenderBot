@@ -4,7 +4,7 @@ gnome-terminal -t "DriverServer" -e 'ros2 launch ur_robot_driver ur_control.laun
 
 sleep 5
 
-gnome-terminal -t "MoveitServer" -e 'ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur5e launch_rviz:=true use_fake_hardware:=true description_file:=ur_with_end_effector.xacro'
+gnome-terminal -t "MoveitServer" -e 'ros2 launch ur_moveit_config ur_moveit.launch.py ur_type:=ur5e launch_rviz:=true use_fake_hardware:=true description_package:=ur_with_end_effector_description description_file:=ur_with_end_effector.xacro'
 
 
 
