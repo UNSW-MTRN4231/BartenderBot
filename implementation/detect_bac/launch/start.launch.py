@@ -27,11 +27,11 @@ def generate_launch_description():
         executable='tf_broadcast',
         name='tf_broadcast'
     )
-
+    
     static_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['1.32', '0.05', '0.76', '1.4', '-0.3', '-2.3', 'base_link', 'camera_link'],  # XYZ，RPY ; red yaw, green pitch, blue roll
+        arguments=['1.30', '0.05', '0.70', '1.6', '0', '-2.3', 'base_link', 'camera_link'],  # XYZ，RPY ; red yaw, green pitch, blue roll
 
         name='static_tf_node'
     )
