@@ -51,7 +51,7 @@ class move_to_marker : public rclcpp::Node
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
       
-      move_group_interface->setPlanningTime(20.0);
+      move_group_interface->setPlanningTime(5.0);
       move_group_interface->setNumPlanningAttempts(1);
       move_group_interface->setPlannerId("RRTstarkConfigDefault");
 
@@ -108,7 +108,6 @@ class move_to_marker : public rclcpp::Node
         if (success) {
           move_group_interface->execute(planMessage);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
           std::cout <<  "Planning failed!" << std::endl;
         }
@@ -119,34 +118,26 @@ class move_to_marker : public rclcpp::Node
     void executeLinearMove(const geometry_msgs::msg::Pose &msg) const {
       //TODO NEW CHECK FOR LEGAL POSE
       if (true) {
-        auto success = false;
 
         RCLCPP_INFO(this->get_logger(), "Starting linear move");
-        
-        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
         
         // Cartesian Paths
         std::vector<geometry_msgs::msg::Pose> waypoints;
         geometry_msgs::msg::Pose targetPose1 = msg;
         waypoints.push_back(targetPose1);
-
         moveit_msgs::msg::RobotTrajectory trajectory;
-        double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
-        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
+        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+        double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
 
         RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
 
-        sleep(15.0);
-
-        success = static_cast<bool>(move_group_interface->plan(planMessage));
-        RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1
-        if (success) {
-          move_group_interface->execute(planMessage);
+        if (fraction == 1) {
+          move_group_interface->execute(trajectory);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
-          std::cout <<  "Planning failed!" << std::endl;
+          std::cout <<  "Planning failed! \nExecuting free move" << std::endl;
+          executeFreeMove(msg);
         }
 
       } 
@@ -164,14 +155,14 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to ball point
-        move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y, msg.orientation.z, msg.orientation.w);
+        //move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y,msg.orientation.z,msg.orientation.w);
+        move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1
         if (success) {
           move_group_interface->execute(planMessage);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
           std::cout <<  "Planning failed!" << std::endl;
         }
@@ -190,7 +181,8 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to home
-        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
+        //std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
+        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -15.0*M_PI/180, 90.0*M_PI/180, 90.0*M_PI/180};
         move_group_interface->setJointValueTarget(joints);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
