@@ -314,19 +314,9 @@ class test_brain : public rclcpp::Node {
       home();
       grip(0);
       geometry_msgs::msg::Pose test;
-      geometry_msgs::msg::Pose test2;
-      test.position.x = 0.68835;
-      test.position.y = 0.433;
-      test.position.z = 0.04212;
-
-      test2.position.x = 0.66835;
-      test2.position.y = 0.433;
-      test2.position.z = 0.04212;
-      
-      //pickup(test);
-      shake(test,test2);
-      //sleep(2);
-      //pour(0.1);
+      test = get_pose("pink_bottle");
+      pickup(test);
+      pour(0.1);
 
      sleep(100.0); 
     }
