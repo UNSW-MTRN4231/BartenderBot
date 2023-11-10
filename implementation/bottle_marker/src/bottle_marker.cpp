@@ -24,7 +24,7 @@ public:
     bottle_marker() : Node("bottle_marker") {
         publisher_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("bottle_markers", 10);
         ppublisher_ = this->create_publisher<geometry_msgs::msg::PoseArray>("detect_bac", 10);
-        subscription_ = this->create_subscription<geometry_msgs::msg::PoseArray>
+        real_sub_ = this->create_subscription<vision_ros_msgs::msg::BoundingBoxes>
         (
             "detect_bac",10, std::bind(&bottle_marker::publishMarkers, this, _1)
         );
@@ -38,7 +38,7 @@ public:
         primitive.dimensions[0] = 0.20;
         primitive.dimensions[1] = 0.025;
 
-        timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
+        //timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
     };
 
 private:
@@ -60,26 +60,26 @@ private:
 
     } 
 
-    void publishMarkers(const geometry_msgs::msg::PoseArray &heard_msg) {
-        std::cout << heard_msg.header.frame_id;
+    void publishMarkers(const vision_ros_msgs::msg::BoundingBoxes &heard_msg) {
+        //std::cout << heard_msg.header.frame_id;
 
         visualization_msgs::msg::MarkerArray marker_message;
         planning_scene.world.collision_objects.clear();
-        for (int i=0; i < heard_msg.poses.size(); i++) {
-            marker_message.markers.push_back(addMarker(heard_msg.poses[i],i));
+        for (int i=0; i < heard_msg.bounding_boxes.size(); i++) {
+            marker_message.markers.push_back(addMarker(heard_msg.bounding_boxes[i],i));
 
             moveit_msgs::msg::AttachedCollisionObject attached_object;
-            attached_object.link_name = "world";
+            attached_object.link_name = "base_link";
             /* The header must contain a valid TF frame*/
-            attached_object.object.header.frame_id = "world";
+            attached_object.object.header.frame_id = "camera_frame";
             /* The id of the object */
-            attached_object.object.id = "box"+i;
+            attached_object.object.id = "bottle"+i;
 
             /* A default pose */
             geometry_msgs::msg::Pose pose;
-            pose.position.x = 0.25+ i*0.15;
-            pose.position.y = 0.25+ i*0.15;
-            pose.position.z = 0.1;
+            pose.position.x = heard_msg.bounding_boxes[i].x;
+            pose.position.y = heard_msg.bounding_boxes[i].y;
+            pose.position.z = heard_msg.bounding_boxes[i].z;
             pose.orientation.w = 1.0;
 
             /* Define a box to be attached */
@@ -96,7 +96,7 @@ private:
         planning_scene_diff_publisher_->publish(planning_scene);
     };  
 
-    visualization_msgs::msg::Marker addMarker(const geometry_msgs::msg::Pose &pose, int i) {
+    visualization_msgs::msg::Marker addMarker(const vision_ros_msgs::msg::BoundingBox &pose, int i) {
         auto message = visualization_msgs::msg::Marker();
         message.header.frame_id = "world";
         message.header.stamp = this->now();
@@ -104,9 +104,9 @@ private:
         message.id = i;
         message.type = visualization_msgs::msg::Marker::CYLINDER;
         message.action = visualization_msgs::msg::Marker::ADD;
-        message.pose.position.x = pose.position.x;
-        message.pose.position.y = pose.position.y;
-        message.pose.position.z = pose.position.z;
+        message.pose.position.x = pose.x;
+        message.pose.position.y = pose.y;
+        message.pose.position.z = pose.z;
         message.pose.orientation.x = 0.0;
         message.pose.orientation.y = 0.0;
         message.pose.orientation.z = 0.0;
