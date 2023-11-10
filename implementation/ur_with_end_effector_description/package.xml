@@ -1,0 +1,21 @@
+<package format="2">
+  <name>ur_with_end_effector_description</name>
+  <version>1.0.0</version>
+  <description>MTNR4231 UR5e robot arm with end effector.</description>
+
+  <maintainer email="dennuguyen@gmail.com" />
+  
+  <author email="dennuguyen@gmail.com">Dan Nguyen</author>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>ur_description</depend>
+  <depend>end_effector_description</depend>
+    <exec_depend>urdf</exec_depend>
+    <exec_depend>xacro</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

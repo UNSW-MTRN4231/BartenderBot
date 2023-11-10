@@ -49,7 +49,48 @@ class test_brain : public rclcpp::Node {
     }
 
   private:
+    //Function to generate a target position message
+    geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
+      geometry_msgs::msg::Pose msg;
     
+      msg.position.x = tf.transform.translation.x;
+      msg.position.y = tf.transform.translation.y;
+      msg.position.z = tf.transform.translation.z;
+
+       RCLCPP_INFO(this->get_logger(), "Position Heard: '%f' '%f' '%f' ", msg.position.x, msg.position.y, msg.position.z);
+      
+      // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
+      
+      tf2::Quaternion q;
+      q.setRPY(-M_PI, 0 , M_PI/2);
+      msg.orientation.x = q.x();
+      msg.orientation.y = q.y();
+      msg.orientation.z = q.z();
+      msg.orientation.w = q.w();
+      
+      return msg;
+    }
+
+    //requests transform frame for object
+    geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
+      // Check if the transformation is between "world" and "req_frame"
+      std::string fromFrameRel = "base_link";
+      std::string toFrameRel = req_frame;
+      geometry_msgs::msg::TransformStamped t;
+
+      try {
+          t = tf_buffer_->lookupTransform(fromFrameRel, toFrameRel, tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+          RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+          
+      }
+      return t;
+    }
+
+    //gets pose of object
+    geometry_msgs::msg::Pose get_pose(std::string item_frame) {
+        return generatePoseFromTransform(tfCallback(item_frame));
+    }
     //sends pose to ur
     void send_pose(std::string type) {
       geometry_msgs::msg::PoseStamped msg;
@@ -57,16 +98,17 @@ class test_brain : public rclcpp::Node {
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
 
     void send_pose() {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = "free";
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
     
     // toggle gripper
@@ -75,108 +117,195 @@ class test_brain : public rclcpp::Node {
       if (toggle == 0) {
         grip.data  = "open";
         toggle = 1;
+        RCLCPP_INFO(this->get_logger(), "Claw Open");
       }
       else if(toggle == 1) {
         grip.data = "close";
         toggle = 0;
+        RCLCPP_INFO(this->get_logger(), "Claw Close");
       }
       arduino_publisher_->publish(grip);
     }
 
     //returns robot to home position
     void home() {
-      curr_pose.position.x = 0.58835;
-      curr_pose.position.y = 0.133;
-      curr_pose.position.z = 0.37212;
+      curr_pose.position.x = 0.588457;
+      curr_pose.position.y = 0.133329;
+      curr_pose.position.z = 0.371829;
       
+      curr_pose.orientation.x = 0.707;
+      curr_pose.orientation.y = 0;
+      curr_pose.orientation.z = 0.707;
+      curr_pose.orientation.w = 0;
+      send_pose("home");
+      RCLCPP_INFO(this->get_logger(), "Moving to home position");
+    }
+
+    void pickup(geometry_msgs::msg::Pose pose) {
       tf2::Quaternion q;
-      q.setRPY(-M_PI, 0 , M_PI/2);
+      RCLCPP_INFO(this->get_logger(), "Starting pickup");
+      if (pose.position.y > 0.3) {
+        curr_pose.position.y = pose.position.y - 0.1;
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        curr_pose.position.y = pose.position.y + 0.1;
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
+      curr_pose.position.x = pose.position.x;
+      curr_pose.position.z = pose.position.z;
+      
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose("home");
-    }
+      send_pose();
 
+      curr_pose.position.y = pose.position.y;
+      send_pose("linear");
+      grip(1);
+
+      curr_pose.position.z = 0.37;
+      send_pose("linear");
+    }
 
     // combines both parts of shaker and mixes, then dissasembles
     void shake(geometry_msgs::msg::Pose big, geometry_msgs::msg::Pose small) {
       // picks up small shaker, moves above other, rotates and combines
-      curr_pose = small;
-      send_pose();
-      grip(1);
-      curr_pose.position.z += 20;
-      send_pose();
-      curr_pose = big;
-      curr_pose.position.z += 20;
+      
+      pickup(small);
+      tf2::Quaternion q;
+      //rotates bottle
+      if (big.position.y > 0.3) {
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+      } else {
+        curr_pose.orientation.x = 0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = -0.5;
+        curr_pose.orientation.w = 0.5;
+      }
       send_pose();
 
-      curr_pose.position.z -= 10;
+      curr_pose.position.x = big.position.x;
+      curr_pose.position.y = big.position.y;
       send_pose();
+
+      curr_pose.position.z -= 0.15;
+      send_pose("linear");
       grip(0);
       // picks up combined, moves above and rotates
-      curr_pose.position.z -= 5;
-      send_pose();
+      curr_pose.position.z -= 0.05;
+      send_pose("linear");
       grip(1);
 
-      curr_pose.position.z += 30;
-      send_pose();
+      curr_pose.position.z += 0.3;
+      send_pose("linear");
 
-      tf2::Quaternion q;
-      q.setRPY(M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose();
-      q.setRPY(-M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-
-
-      // places back down and dissasembles
-      curr_pose.position.z -= 30;
-      send_pose();
-      grip(0);
-
-      curr_pose.position.z += 5;
-      send_pose();
-      grip(1);
-
-      curr_pose.position.z += 10;
-      send_pose();
-
-      curr_pose.position.x += 15;
-      send_pose();
-      grip(0);
-    }
-    
-    // pours the bottle at location
-    void pour(float offset) {
-        offset = offset/2;
-        // moves accross offset width
-        curr_pose.position.x += offset;
-        send_pose();
-        
-        // pours drink
-        tf2::Quaternion q;
-        q.setRPY(M_PI/4, 0 , 0); // 45 degrees roll in rad
+      //shaking
+      if (curr_pose.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
         send_pose();
-        curr_pose.orientation.x = 0;
-        curr_pose.orientation.y = 0;
-        curr_pose.orientation.z = 0;
-        curr_pose.orientation.w = 0;
+
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+        send_pose();
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+        curr_pose.orientation.x = q.x();
+        curr_pose.orientation.y = q.y();
+        curr_pose.orientation.z = q.z();
+        curr_pose.orientation.w = q.w();
         send_pose();
 
-        // returns to original position
-        curr_pose.position.x -=offset;
+        curr_pose.orientation.x = 0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = -0.5;
+        curr_pose.orientation.w = 0.5;
         send_pose();
+      }
+
+      // places back down and dissasembles
+      curr_pose.position.z -= 0.3;
+      send_pose("linear");
+      grip(0);
+
+      curr_pose.position.z += 0.05;
+      send_pose("linear");
+      grip(1);
+
+      curr_pose.position.z += 0.10;
+      send_pose("linear");
+
+      //flips back upright
+      if (curr_pose.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
+
+      curr_pose.position.x = small.position.x;
+      curr_pose.position.y = small.position.y;
+      send_pose("linear");
+      curr_pose.position.z = small.position.z;
+      send_pose("linear");
+      grip(0);
+    }
+    
+    // pours the bottle at current location
+    void pour(float offset) {
+      offset = (0.07-offset/2)/sqrt(2);
+        
+      tf2::Quaternion q;
+      q.setRPY(0, -M_PI/2, -M_PI); // facing computer
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
+      RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
+      if (curr_pose.position.y > 0.3) {
+        // moves accross offset width
+        curr_pose.position.y = curr_pose.position.y - offset;
+        send_pose("linear");
+        curr_pose.orientation.x = 0.182746;
+        curr_pose.orientation.y = 0.683087;
+        curr_pose.orientation.z = 0.183275;
+        curr_pose.orientation.w = 0.68294; // pour towards
+      } else {
+        // moves accross offset width
+        curr_pose.position.y = curr_pose.position.y + offset;
+        send_pose("linear");
+        curr_pose.orientation.x = -0.183292;
+        curr_pose.orientation.y = 0.682972;
+        curr_pose.orientation.z = -0.182745;
+        curr_pose.orientation.w = 0.68305; // pour away
+      }
+      // pours drink
+      //curr_pose.orientation.w = M_PI/4;
+      send_pose();
+      RCLCPP_INFO(this->get_logger(), "Pouring...");
+      sleep(2);
+      
+
+      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // return to upright
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose();
     }
 
     
@@ -186,29 +315,12 @@ class test_brain : public rclcpp::Node {
       //moves to home
       home();
       grip(0);
-
-      tf2::Quaternion q;
-      q.setRPY(-M_PI, 0+M_PI/4 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
-      q.setRPY(-M_PI, 0-M_PI/4 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
-      q.setRPY(-M_PI, 0, M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose("rotate");
-      sleep(10.0);
+      geometry_msgs::msg::Pose test;
+      geometry_msgs::msg::Pose test2;
+      test = get_pose("cup_red");
+      test2 = get_pose("cup_pink");
+      shake(test, test2);
+      //pour(0.1);
 
      sleep(100.0); 
     }
