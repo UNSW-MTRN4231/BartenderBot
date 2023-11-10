@@ -1,6 +1,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <chrono>
 #include <functional>
 #include <string>
@@ -44,13 +45,15 @@ class move_to_marker : public rclcpp::Node
     {
 
       // Initalise the pose subscriber
-      subscription_ = this->create_subscription<geometry_msgs::msg::Pose>("move_to", 10, std::bind(&move_to_marker::executeMove, this, _1));
+      subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>("move_to", 10, std::bind(&move_to_marker::messageRead, this, _1));
 
 
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
       
-      move_group_interface->setPlanningTime(30.0);
+      move_group_interface->setPlanningTime(20.0);
+      move_group_interface->setNumPlanningAttempts(1);
+      move_group_interface->setPlannerId("RRTstarkConfigDefault");
 
       std::string frame_id = move_group_interface->getPlanningFrame();
 
@@ -86,49 +89,139 @@ class move_to_marker : public rclcpp::Node
     }
   private:
 
-  // Plan Movement
-  void executeMove(const geometry_msgs::msg::Pose &msg) const {
+    // Plan Movement
+    void executeFreeMove(const geometry_msgs::msg::Pose &msg) const {
 
-    //TODO NEW CHECK FOR LEGAL POSE
-    if (true) {
-      auto success = false;
+      //TODO NEW CHECK FOR LEGAL POSE
+      if (true) {
+        auto success = false;
 
-      RCLCPP_INFO(this->get_logger(), "Starting move");
-      
-      moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+        RCLCPP_INFO(this->get_logger(), "Starting free move");
+        
+        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
-      /*
-      // Cartesian Paths
-      std::vector<geometry_msgs::msg::Pose> waypoints;
-      geometry_msgs::msg::Pose targetPose1 = msg;
-      waypoints.push_back(targetPose1);
+        //Plan movement to ball point
+        move_group_interface->setPoseTarget(msg);
+        success = static_cast<bool>(move_group_interface->plan(planMessage));
+        RCLCPP_INFO(this->get_logger(), "Planning done");
+        //Execute movement to point 1
+        if (success) {
+          move_group_interface->execute(planMessage);
+          RCLCPP_INFO(this->get_logger(), "Done moving");
 
-      moveit_msgs::msg::RobotTrajectory trajectory;
-      double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+        } else {
+          std::cout <<  "Planning failed!" << std::endl;
+        }
 
-      RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
-
-      sleep(15.0);
-      */
-
-      //Plan movement to ball point
-      move_group_interface->setPoseTarget(msg);
-      success = static_cast<bool>(move_group_interface->plan(planMessage));
-      RCLCPP_INFO(this->get_logger(), "Planning done");
-      //Execute movement to point 1
-      if (success) {
-        move_group_interface->execute(planMessage);
-        RCLCPP_INFO(this->get_logger(), "Done moving");
-
-      } else {
-        std::cout <<  "Planning failed!" << std::endl;
       }
-
     }
-  }
 
+    void executeLinearMove(const geometry_msgs::msg::Pose &msg) const {
+      //TODO NEW CHECK FOR LEGAL POSE
+      if (true) {
+        auto success = false;
 
-  rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr subscription_;
+        RCLCPP_INFO(this->get_logger(), "Starting linear move");
+        
+        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+        
+        // Cartesian Paths
+        std::vector<geometry_msgs::msg::Pose> waypoints;
+        geometry_msgs::msg::Pose targetPose1 = msg;
+        waypoints.push_back(targetPose1);
+
+        moveit_msgs::msg::RobotTrajectory trajectory;
+        double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
+
+        RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
+
+        sleep(15.0);
+
+        success = static_cast<bool>(move_group_interface->plan(planMessage));
+        RCLCPP_INFO(this->get_logger(), "Planning done");
+        //Execute movement to point 1
+        if (success) {
+          move_group_interface->execute(planMessage);
+          RCLCPP_INFO(this->get_logger(), "Done moving");
+
+        } else {
+          std::cout <<  "Planning failed!" << std::endl;
+        }
+
+      } 
+    }
+
+    // Plan Movement
+    void executeRotationMove(const geometry_msgs::msg::Pose &msg) const {
+
+      //TODO NEW CHECK FOR LEGAL POSE
+      if (true) {
+        auto success = false;
+
+        RCLCPP_INFO(this->get_logger(), "Starting rotation move");
+        
+        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+
+        //Plan movement to ball point
+        move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y, msg.orientation.z, msg.orientation.w);
+        success = static_cast<bool>(move_group_interface->plan(planMessage));
+        RCLCPP_INFO(this->get_logger(), "Planning done");
+        //Execute movement to point 1
+        if (success) {
+          move_group_interface->execute(planMessage);
+          RCLCPP_INFO(this->get_logger(), "Done moving");
+
+        } else {
+          std::cout <<  "Planning failed!" << std::endl;
+        }
+
+      }
+    }
+
+    void executeHomeMove() const {
+
+      //TODO NEW CHECK FOR LEGAL POSE
+      if (true) {
+        auto success = false;
+
+        RCLCPP_INFO(this->get_logger(), "Starting home move");
+        
+        moveit::planning_interface::MoveGroupInterface::Plan planMessage;
+
+        //Plan movement to home
+        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
+        move_group_interface->setJointValueTarget(joints);
+        success = static_cast<bool>(move_group_interface->plan(planMessage));
+        RCLCPP_INFO(this->get_logger(), "Planning done");
+        //Execute movement to point 1
+        if (success) {
+          move_group_interface->execute(planMessage);
+          RCLCPP_INFO(this->get_logger(), "Done moving");
+
+        } else {
+          std::cout <<  "Planning failed!" << std::endl;
+        }
+
+      }
+    }
+
+    void messageRead(const geometry_msgs::msg::PoseStamped &msg) const {
+      if (msg.header.frame_id == "free") {
+        executeFreeMove(msg.pose);
+      } else if ((msg.header.frame_id == "linear")) {
+        executeLinearMove(msg.pose);
+      } else if ((msg.header.frame_id == "rotate")) {
+        executeRotationMove(msg.pose);
+      } else if ((msg.header.frame_id == "home")) {
+        executeHomeMove();
+      } else {
+        RCLCPP_INFO(this->get_logger(), "Cannot read move command, executing free move");
+        executeFreeMove(msg.pose);
+      }
+    }
+
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr subscription_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
 };
 
