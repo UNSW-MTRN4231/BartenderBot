@@ -130,17 +130,16 @@ class arm_brain : public rclcpp::Node {
 
     //returns robot to home position
     void home() {
-      curr_pose.position.x = 0.58835;
-      curr_pose.position.y = 0.133;
-      curr_pose.position.z = 0.37212;
+      curr_pose.position.x = 0.588457;
+      curr_pose.position.y = 0.133329;
+      curr_pose.position.z = 0.371829;
       
-      tf2::Quaternion q;
-      q.setRPY(-M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
+      curr_pose.orientation.x = 0.707;
+      curr_pose.orientation.y = 0;
+      curr_pose.orientation.z = 0.707;
+      curr_pose.orientation.w = 0;
       send_pose("home");
+      RCLCPP_INFO(this->get_logger(), "Moving to home position");
     }
 
     void move(std::string item) {
@@ -192,11 +191,19 @@ class arm_brain : public rclcpp::Node {
       
       pickup(small);
       tf2::Quaternion q;
-      q.setRPY(M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
+      //rotates bottle
+      if (curr_pose.position.y > 0.3) {
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+      } else {
+        curr_pose.orientation.x = 0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = -0.5;
+        curr_pose.orientation.w = 0.5;
+      }
+      send_pose();
 
       curr_pose.position.x = big.position.x;
       curr_pose.position.y = big.position.y;
@@ -213,19 +220,34 @@ class arm_brain : public rclcpp::Node {
       curr_pose.position.z += 0.3;
       send_pose("linear");
 
-    
-      q.setRPY(M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose();
-      q.setRPY(-M_PI, 0 , M_PI/2);
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
-      send_pose();
+      //shaking
+      if (curr_pose.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+        curr_pose.orientation.x = q.x();
+        curr_pose.orientation.y = q.y();
+        curr_pose.orientation.z = q.z();
+        curr_pose.orientation.w = q.w();
+        send_pose();
+
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+        send_pose();
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+        curr_pose.orientation.x = q.x();
+        curr_pose.orientation.y = q.y();
+        curr_pose.orientation.z = q.z();
+        curr_pose.orientation.w = q.w();
+        send_pose();
+
+        curr_pose.orientation.x = 0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = -0.5;
+        curr_pose.orientation.w = 0.5;
+        send_pose();
+      }
 
       // places back down and dissasembles
       curr_pose.position.z -= 0.3;
@@ -239,7 +261,12 @@ class arm_brain : public rclcpp::Node {
       curr_pose.position.z += 0.10;
       send_pose("linear");
 
-      q.setRPY(M_PI, 0 , M_PI/2);
+      //flips back upright
+      if (curr_pose.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -259,7 +286,7 @@ class arm_brain : public rclcpp::Node {
       offset = (0.07-offset/2)/sqrt(2);
         
       tf2::Quaternion q;
-      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // facing computer
+      q.setRPY(0, -M_PI/2, -M_PI); // facing computer
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
@@ -270,18 +297,21 @@ class arm_brain : public rclcpp::Node {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
         send_pose("linear");
-        q.setRPY(-M_PI/2, M_PI/4 , M_PI/2); // pour towards
+        curr_pose.orientation.x = 0.182746;
+        curr_pose.orientation.y = 0.683087;
+        curr_pose.orientation.z = 0.183275;
+        curr_pose.orientation.w = 0.68294; // pour towards
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
         send_pose("linear");
-        q.setRPY(M_PI/2, M_PI/4 , -M_PI/2); // pour away
+        curr_pose.orientation.x = -0.183292;
+        curr_pose.orientation.y = 0.682972;
+        curr_pose.orientation.z = -0.182745;
+        curr_pose.orientation.w = 0.68305; // pour away
       }
       // pours drink
-      curr_pose.orientation.x = q.x();
-      curr_pose.orientation.y = q.y();
-      curr_pose.orientation.z = q.z();
-      curr_pose.orientation.w = q.w();
+      //curr_pose.orientation.w = M_PI/4;
       send_pose();
       RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);

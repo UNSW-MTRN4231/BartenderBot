@@ -108,7 +108,6 @@ class move_to_marker : public rclcpp::Node
         if (success) {
           move_group_interface->execute(planMessage);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
           std::cout <<  "Planning failed!" << std::endl;
         }
@@ -126,7 +125,6 @@ class move_to_marker : public rclcpp::Node
         std::vector<geometry_msgs::msg::Pose> waypoints;
         geometry_msgs::msg::Pose targetPose1 = msg;
         waypoints.push_back(targetPose1);
-
         moveit_msgs::msg::RobotTrajectory trajectory;
         //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
         double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
@@ -137,7 +135,6 @@ class move_to_marker : public rclcpp::Node
         if (fraction == 1) {
           move_group_interface->execute(trajectory);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
           std::cout <<  "Planning failed! \nExecuting free move" << std::endl;
           executeFreeMove(msg);
@@ -158,15 +155,14 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to ball point
-        move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y,msg.orientation.z,msg.orientation.w);
-        //move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
+        //move_group_interface->setOrientationTarget(msg.orientation.x,msg.orientation.y,msg.orientation.z,msg.orientation.w);
+        move_group_interface->setJointValueTarget("wrist_3_joint", msg.orientation.w);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
         //Execute movement to point 1
         if (success) {
           move_group_interface->execute(planMessage);
           RCLCPP_INFO(this->get_logger(), "Done moving");
-
         } else {
           std::cout <<  "Planning failed!" << std::endl;
         }
