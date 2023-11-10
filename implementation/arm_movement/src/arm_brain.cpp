@@ -167,12 +167,13 @@ class arm_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
+      send_pose();
       q.setRPY(-M_PI, 0 , M_PI/2);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-
+      send_pose();
 
       // places back down and dissasembles
       curr_pose.position.z -= 30;

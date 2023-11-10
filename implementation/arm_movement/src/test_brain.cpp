@@ -5,6 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 #include "brain_msgs/msg/command.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -26,7 +27,7 @@ class test_brain : public rclcpp::Node {
     test_brain() : Node("test_brain")
     {
       // Initialise the pose publisher
-      pose_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>("move_to", 10);
+      pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("move_to", 10);
 
       // Initialise the arduino publisher
       arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduino", 10);
@@ -50,10 +51,22 @@ class test_brain : public rclcpp::Node {
   private:
     
     //sends pose to ur
+    void send_pose(std::string type) {
+      geometry_msgs::msg::PoseStamped msg;
+      msg.pose = curr_pose;
+      msg.header.frame_id = type;
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      pose_publisher_->publish(msg);
+      sleep(10.0);
+    }
+
     void send_pose() {
-      geometry_msgs::msg::Pose pose = curr_pose;
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", pose.position.x, pose.position.y, pose.position.z);
-      pose_publisher_->publish(pose);
+      geometry_msgs::msg::PoseStamped msg;
+      msg.pose = curr_pose;
+      msg.header.frame_id = "free";
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      pose_publisher_->publish(msg);
+      sleep(10.0);
     }
     
     // toggle gripper
@@ -82,7 +95,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("home");
     }
 
 
@@ -115,6 +128,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
+      send_pose();
       q.setRPY(-M_PI, 0 , M_PI/2);
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
@@ -172,14 +186,37 @@ class test_brain : public rclcpp::Node {
       //moves to home
       home();
       grip(0);
-      // check for what command is
-      
+
+      tf2::Quaternion q;
+      q.setRPY(-M_PI, 0+M_PI/4 , M_PI/2);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose("rotate");
+      sleep(10.0);
+      q.setRPY(-M_PI, 0-M_PI/4 , M_PI/2);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose("rotate");
+      sleep(10.0);
+      q.setRPY(-M_PI, 0, M_PI/2);
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose("rotate");
+      sleep(10.0);
+
+     sleep(100.0); 
     }
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
-    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
