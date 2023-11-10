@@ -77,7 +77,7 @@ class test_brain : public rclcpp::Node {
       geometry_msgs::msg::TransformStamped t;
 
       try {
-          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+          t = tf_buffer_->lookupTransform( fromFrameRel, toFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
@@ -143,14 +143,14 @@ class test_brain : public rclcpp::Node {
       tf2::Quaternion q;
       RCLCPP_INFO(this->get_logger(), "Starting pickup");
       if (pose.position.y > 0.3) {
-        curr_pose.position.y = pose.position.y - 0.15;
+        curr_pose.position.y = pose.position.y - 0.15 - claw.y;
         q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
       } else {
-        curr_pose.position.y = pose.position.y + 0.15;
+        curr_pose.position.y = pose.position.y + 0.15 + claw.y;
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
       }
       curr_pose.position.x = pose.position.x;
-      curr_pose.position.z = pose.position.z + 0.07;
+      curr_pose.position.z = pose.position.z + claw.z;
       
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
@@ -158,7 +158,11 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.w = q.w();
       send_pose();
 
-      curr_pose.position.y = pose.position.y;
+      if (pose.position.y > 0.3) {
+        curr_pose.position.y = pose.position.y - claw.y;
+      } else {
+        curr_pose.position.y = pose.position.y + claw.y;
+      }
       send_pose("linear");
       grip(1);
 
@@ -173,7 +177,7 @@ class test_brain : public rclcpp::Node {
       pickup(small);
       tf2::Quaternion q;
       //rotates bottle
-      if (curr_pose.position.y > 0.3) {
+      if (big.position.y > 0.3) {
         curr_pose.orientation.x = -0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = 0.5;
@@ -187,7 +191,11 @@ class test_brain : public rclcpp::Node {
       send_pose();
 
       curr_pose.position.x = big.position.x;
-      curr_pose.position.y = big.position.y;
+      if (big.position.y > 0.3) {
+        curr_pose.position.x = big.position.x - claw.y;
+      } else {
+        curr_pose.position.x = big.position.x + claw.y;
+      }
       send_pose("linear");
 
       curr_pose.position.z -= 0.15;
@@ -255,9 +263,13 @@ class test_brain : public rclcpp::Node {
       send_pose();
 
       curr_pose.position.x = small.position.x;
-      curr_pose.position.y = small.position.y;
+      if (big.position.y > 0.3) {
+        curr_pose.position.x = small.position.y - claw.y;
+      } else {
+        curr_pose.position.x = small.position.y + claw.y;
+      }
       send_pose("linear");
-      curr_pose.position.z = small.position.z;
+      curr_pose.position.z = small.position.z + claw.z;
       send_pose("linear");
       grip(0);
     }
@@ -329,6 +341,11 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
+    struct offset {
+      double y = 12;
+      double z = 10;
+    } claw;
+
     size_t count_;
 };
 
