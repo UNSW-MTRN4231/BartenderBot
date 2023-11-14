@@ -84,8 +84,6 @@ private:
 
         visualization_msgs::msg::MarkerArray marker_message;
         planning_scene.world.collision_objects.clear();
-        //RCLCPP_INFO(this->get_logger(),"Number of Objects: %i", heard_msg.bounding_boxes.size());
-        
         for (int i=0; i < frames.size(); i++) {
             geometry_msgs::msg::TransformStamped t = tfCallback(frames[i]);
             marker_message.markers.push_back(addMarker(t,i));
