@@ -27,10 +27,6 @@ class bottle_marker : public rclcpp::Node {
 public:
     bottle_marker() : Node("bottle_marker") {
         publisher_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("bottle_markers", 10);
-        real_sub_ = this->create_subscription<vision_ros_msgs::msg::BoundingBoxes>
-        (
-            "detect_bac",10, std::bind(&bottle_marker::publishMarkers, this, _1)
-        );
 
         planning_scene_diff_publisher_ = this->create_publisher<moveit_msgs::msg::PlanningScene>("planning_scene", 1);
         
@@ -44,19 +40,21 @@ public:
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-        //timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
+        timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishMarkers, this));
     };
 
 private:
 
+    std::vector<std::string> frames = {"bottle_pink","bottle_green","bottle_blue","bottle_yellow","bottle_red","cup_pink","cup_red"};
+
     geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
       // Check if the transformation is between "world" and "req_frame"
-      std::string fromFrameRel = "world";
+      std::string fromFrameRel = "base_link";
       std::string toFrameRel = req_frame;
       geometry_msgs::msg::TransformStamped t;
 
       try {
-          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+          t = tf_buffer_->lookupTransform(fromFrameRel, toFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
@@ -81,28 +79,29 @@ private:
 
     } 
 
-    void publishMarkers(const vision_ros_msgs::msg::BoundingBoxes &heard_msg) {
+    void publishMarkers() {
         //std::cout << heard_msg.header.frame_id;
 
         visualization_msgs::msg::MarkerArray marker_message;
         planning_scene.world.collision_objects.clear();
-        RCLCPP_INFO(this->get_logger(),"Number of Objects: %i", heard_msg.bounding_boxes.size());
+        //RCLCPP_INFO(this->get_logger(),"Number of Objects: %i", heard_msg.bounding_boxes.size());
         
-        for (int i=0; i < heard_msg.bounding_boxes.size(); i++) {
-            marker_message.markers.push_back(addMarker(heard_msg.bounding_boxes[i],i));
+        for (int i=0; i < frames.size(); i++) {
+            geometry_msgs::msg::TransformStamped t = tfCallback(frames[i]);
+            marker_message.markers.push_back(addMarker(t,i));
 
             moveit_msgs::msg::AttachedCollisionObject attached_object;
-            attached_object.link_name = "world";
+            attached_object.link_name = "base_link";
             /* The header must contain a valid TF frame*/
-            attached_object.object.header.frame_id = "world";
+            attached_object.object.header.frame_id = "base_link";
             /* The id of the object */
             attached_object.object.id = "bottle"+i;
 
             /* A default pose */
             geometry_msgs::msg::Pose pose;
-            pose.position.x = heard_msg.bounding_boxes[i].x;
-            pose.position.y = heard_msg.bounding_boxes[i].y;
-            pose.position.z = heard_msg.bounding_boxes[i].z;
+            pose.position.x = t.transform.translation.x;
+            pose.position.y = t.transform.translation.y;
+            pose.position.z = t.transform.translation.z;
             pose.orientation.w = 1.0;
 
             /* Define a box to be attached */
@@ -119,10 +118,10 @@ private:
         planning_scene_diff_publisher_->publish(planning_scene);
     };  
 
-    visualization_msgs::msg::Marker addMarker(const vision_ros_msgs::msg::BoundingBox &pose, int i) {
+    visualization_msgs::msg::Marker addMarker(geometry_msgs::msg::TransformStamped &t, int i) {
         auto message = visualization_msgs::msg::Marker();
-        geometry_msgs::msg::TransformStamped t = tfCallback(pose.color);
-        message.header.frame_id = "camera_link";
+        ;
+        message.header.frame_id = "base_link";
         message.header.stamp = this->now();
         message.ns = "basic_shapes";
         message.id = i;
