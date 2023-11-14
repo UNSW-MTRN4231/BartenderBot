@@ -15,6 +15,7 @@ find_package(geometry_msgs)
 find_package(visualization_msgs)
 find_package(moveit_msgs)
 find_package(rclcpp REQUIRED)
+find_package(tf2_ros)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -36,6 +37,7 @@ ament_target_dependencies(
   visualization_msgs
   vision_ros_msgs
   moveit_msgs
+  tf2_ros
 )
 
 install(TARGETS 

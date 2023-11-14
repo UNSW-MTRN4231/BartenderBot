@@ -5,6 +5,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
+#include "geometry_msgs/msg/transform_stamped.hpp"
+
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
 
 #include <moveit_msgs/msg/planning_scene.hpp>
 #include <moveit_msgs/msg/attached_collision_object.hpp>
@@ -37,10 +41,28 @@ public:
         primitive.dimensions[0] = 0.20;
         primitive.dimensions[1] = 0.025;
 
+        tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
         //timer = this->create_wall_timer(500ms, std::bind(&bottle_marker::publishPoses, this));
     };
 
 private:
+
+    geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
+      // Check if the transformation is between "world" and "req_frame"
+      std::string fromFrameRel = "world";
+      std::string toFrameRel = req_frame;
+      geometry_msgs::msg::TransformStamped t;
+
+      try {
+          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+          RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+          
+      }
+      return t;
+    }
 
     void publishPoses() {
         auto poses = geometry_msgs::msg::PoseArray();
@@ -99,15 +121,16 @@ private:
 
     visualization_msgs::msg::Marker addMarker(const vision_ros_msgs::msg::BoundingBox &pose, int i) {
         auto message = visualization_msgs::msg::Marker();
+        geometry_msgs::msg::TransformStamped t = tfCallback(pose.color);
         message.header.frame_id = "camera_link";
         message.header.stamp = this->now();
         message.ns = "basic_shapes";
         message.id = i;
         message.type = visualization_msgs::msg::Marker::CYLINDER;
         message.action = visualization_msgs::msg::Marker::ADD;
-        message.pose.position.x = pose.x;
-        message.pose.position.y = pose.y;
-        message.pose.position.z = pose.z;
+        message.pose.position.x = t.transform.translation.x;
+        message.pose.position.y = t.transform.translation.y;
+        message.pose.position.z = t.transform.translation.z;
         message.pose.orientation.x = 0.0;
         message.pose.orientation.y = 0.0;
         message.pose.orientation.z = 0.0;
@@ -128,6 +151,9 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_;
     rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr ppublisher_;
     rclcpp::Subscription<vision_ros_msgs::msg::BoundingBoxes>::SharedPtr real_sub_;
+
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
     shape_msgs::msg::SolidPrimitive primitive;
 
