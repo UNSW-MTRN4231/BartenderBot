@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from vision_ros_msgs.msg import BoundingBox, BoundingBoxes
 
 BOX_COLORS = {
-    "red": {"color_lower": np.array([0, 127, 67]), "color_upper": np.array([10, 255, 255])},
+    "red": {"color_lower": np.array([0, 127, 67]), "color_upper": np.array([20, 255, 255])},
     "blue": {"color_lower": np.array([100, 183, 136]), "color_upper": np.array([124, 255, 255])},
     #"orange": {"color_lower": np.array([0, 101, 146]), "color_upper": np.array([24, 255, 255])},
     "yellow": {"color_lower": np.array([31, 43, 144]), "color_upper": np.array([78, 255, 255])},

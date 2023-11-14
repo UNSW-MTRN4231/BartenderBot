@@ -327,8 +327,8 @@ class test_brain : public rclcpp::Node {
       geometry_msgs::msg::Pose test2;
       test = get_pose("cup_red");
       test2 = get_pose("cup_pink");
-      pickup(test2);
-      //shake(test,test2);
+
+      shake(test,test2);
       //pour(0.1);
       
      sleep(100.0); 
@@ -343,7 +343,7 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
-      double y = 0.175;
+      double y = 0.2;
       double z = 0.05;
     } claw;
 
