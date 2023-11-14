@@ -80,7 +80,6 @@ private:
     } 
 
     void publishMarkers() {
-        //std::cout << heard_msg.header.frame_id;
 
         visualization_msgs::msg::MarkerArray marker_message;
         planning_scene.world.collision_objects.clear();
