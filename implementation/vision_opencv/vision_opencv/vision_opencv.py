@@ -6,15 +6,18 @@ import cv2
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
+import matplotlib.pyplot as plt 
 from vision_ros_msgs.msg import BoundingBox, BoundingBoxes
 
 BOX_COLORS = {
-    # "blue": {"color_lower": np.array([100, 43, 46]), "color_upper": np.array([124, 255, 255])},
-    # "red": {"color_lower": np.array([0, 127, 67]), "color_upper": np.array([10, 255, 255])},
-    # "yellow": {"color_lower": np.array([26, 43, 46]), "color_upper": np.array([34, 255, 255])},
-    # "green": {"color_lower": np.array([35, 43, 46]), "color_upper": np.array([77, 255, 255])},
-     "purple": {"color_lower": np.array([125, 43, 46]), "color_upper": np.array([155, 255, 255])},
-     "pink": {"color_lower": np.array([155, 0, 16]), "color_upper": np.array([179, 255, 255])}
+    "red": {"color_lower": np.array([0, 127, 67]), "color_upper": np.array([10, 255, 255])},
+    "blue": {"color_lower": np.array([100, 183, 136]), "color_upper": np.array([124, 255, 255])},
+    #"orange": {"color_lower": np.array([0, 101, 146]), "color_upper": np.array([24, 255, 255])},
+    "yellow": {"color_lower": np.array([31, 43, 144]), "color_upper": np.array([78, 255, 255])},
+    "green": {"color_lower": np.array([66, 88, 76]), "color_upper": np.array([90, 255, 191])},
+    #"purple": {"color_lower": np.array([125, 43, 46]), "color_upper": np.array([155, 255, 255])},
+    "pink": {"color_lower": np.array([153, 58, 137]), "color_upper": np.array([166, 255, 255])}
+    
 }
 
 class ImageConverter(Node):
@@ -45,8 +48,11 @@ class ImageConverter(Node):
 
         for color in BOX_COLORS.keys():
             mask = cv2.inRange(hsv, BOX_COLORS[color]["color_lower"], BOX_COLORS[color]["color_upper"])
+            #plt.imshow(mask)
             mask = cv2.erode(mask, None, iterations=2)
             mask = cv2.dilate(mask, None, iterations=2)
+            
+            #plt.show()
             mask = cv2.GaussianBlur(mask, (3, 3), 0)
 
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
@@ -55,7 +61,7 @@ class ImageConverter(Node):
                 area = cv2.contourArea(cnt)
                 print(area)
 
-                if area >1000:
+                if area >500:
 
                     x, y, w, h = cv2.boundingRect(cnt)
                     rect = cv2.minAreaRect(cnt)

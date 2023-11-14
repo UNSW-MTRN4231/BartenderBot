@@ -31,7 +31,7 @@ def generate_launch_description():
     static_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
-        arguments=['1.30', '0.05', '0.70', '1.6', '0', '-2.3', 'base_link', 'camera_link'],  # XYZ，RPY ; red yaw, green pitch, blue roll
+        arguments=['1.30', '0.05', '0.70', '1.6', '0', '-2.37', 'base_link', 'camera_link'],  # XYZ，RPY ; red yaw, green pitch, blue roll
 
         name='static_tf_node'
     )

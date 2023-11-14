@@ -14,7 +14,7 @@ def empty(a):
     print(h_min, h_max, s_min, s_max, v_min, v_max)
     return h_min, h_max, s_min, s_max, v_min, v_max
 
-path = '/home/zhitao/image.png'
+path = '/home/mtrn/MTRN4231_Group_A5/image.jpg'
 
 cv2.namedWindow("TrackBars")
 cv2.resizeWindow("TrackBars",640,240)

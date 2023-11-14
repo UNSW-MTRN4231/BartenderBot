@@ -17,7 +17,7 @@ class ListenTransformNode(Node):
 
     def timer_callback(self):
         try:
-            trans = self.tfBuffer.lookup_transform('base_link', 'bottle_pink', rclpy.time.Time())
+            trans = self.tfBuffer.lookup_transform('base_link', 'cup_red', rclpy.time.Time())
             self.get_logger().info('Translation: x: %.2f, y: %.2f, z: %.2f' % (trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z))
             self.get_logger().info('Rotation: x: %.2f, y: %.2f, z: %.2f, w: %.2f' % (trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
