@@ -51,8 +51,8 @@ class move_to_marker : public rclcpp::Node
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
       
-      move_group_interface->setPlanningTime(5.0);
-      move_group_interface->setNumPlanningAttempts(1);
+      move_group_interface->setPlanningTime(10.0);
+      move_group_interface->setNumPlanningAttempts(15);
       move_group_interface->setPlannerId("RRTstarkConfigDefault");
 
       std::string frame_id = move_group_interface->getPlanningFrame();
@@ -82,8 +82,8 @@ class move_to_marker : public rclcpp::Node
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
       planning_scene_interface.applyCollisionObject(col_object_table);
       // Apply constraints as a collision object
-      planning_scene_interface.applyCollisionObject(col_object_backConst);
-      planning_scene_interface.applyCollisionObject(col_object_sideConst);
+      //planning_scene_interface.applyCollisionObject(col_object_backConst);
+      //planning_scene_interface.applyCollisionObject(col_object_sideConst);
 
       RCLCPP_INFO(this->get_logger(), "constructed");
     }

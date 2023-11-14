@@ -30,7 +30,7 @@ class test_brain : public rclcpp::Node {
       pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("move_to", 10);
 
       // Initialise the arduino publisher
-      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduino", 10);
+      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduinoCommand", 10);
       //timer
       timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this));
 
@@ -56,7 +56,7 @@ class test_brain : public rclcpp::Node {
       msg.position.x = tf.transform.translation.x;
       msg.position.y = tf.transform.translation.y;
       msg.position.z = tf.transform.translation.z;
-      
+      RCLCPP_INFO(this->get_logger(), "Position Heard: '%f' '%f' '%f' ", msg.position.x, msg.position.y, msg.position.z);
       // TODO: CHECK ROTATION OF GRIPPER FOR PICKUPS
       
       tf2::Quaternion q;
@@ -72,12 +72,12 @@ class test_brain : public rclcpp::Node {
     //requests transform frame for object
     geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
       // Check if the transformation is between "world" and "req_frame"
-      std::string fromFrameRel = "world";
+      std::string fromFrameRel = "base_link";
       std::string toFrameRel = req_frame;
       geometry_msgs::msg::TransformStamped t;
 
       try {
-          t = tf_buffer_->lookupTransform( fromFrameRel, toFrameRel, tf2::TimePointZero);
+          t = tf_buffer_->lookupTransform(fromFrameRel, toFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
@@ -143,26 +143,23 @@ class test_brain : public rclcpp::Node {
       tf2::Quaternion q;
       RCLCPP_INFO(this->get_logger(), "Starting pickup");
       if (pose.position.y > 0.3) {
-        curr_pose.position.y = pose.position.y - 0.15 - claw.y;
+        curr_pose.position.y = pose.position.y - claw.y;
         q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
       } else {
-        curr_pose.position.y = pose.position.y + 0.15 + claw.y;
+        curr_pose.position.y = pose.position.y + claw.y;
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
       }
       curr_pose.position.x = pose.position.x;
-      curr_pose.position.z = pose.position.z + claw.z;
+      curr_pose.position.z = pose.position.z + claw.z + 0.15;
       
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose();
-
-      if (pose.position.y > 0.3) {
-        curr_pose.position.y = pose.position.y - claw.y;
-      } else {
-        curr_pose.position.y = pose.position.y + claw.y;
-      }
+      grip(0);
+      
+      curr_pose.position.z = pose.position.z + claw.z;
       send_pose("linear");
       grip(1);
 
@@ -324,12 +321,16 @@ class test_brain : public rclcpp::Node {
       
       //moves to home
       home();
-      grip(0);
+      grip(1);
+      sleep(5);
       geometry_msgs::msg::Pose test;
-      test = get_pose("pink_bottle");
-      pickup(test);
-      pour(0.1);
-
+      geometry_msgs::msg::Pose test2;
+      test = get_pose("cup_red");
+      test2 = get_pose("cup_pink");
+      pickup(test2);
+      //shake(test,test2);
+      //pour(0.1);
+      
      sleep(100.0); 
     }
 
@@ -342,8 +343,8 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
-      double y = 12;
-      double z = 10;
+      double y = 0.175;
+      double z = 0.05;
     } claw;
 
     size_t count_;
