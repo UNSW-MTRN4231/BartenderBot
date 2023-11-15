@@ -1,5 +1,6 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include "std_msgs/msg/string.hpp"
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <chrono>
@@ -46,13 +47,14 @@ class move_to_marker : public rclcpp::Node
 
       // Initalise the pose subscriber
       subscription_ = this->create_subscription<geometry_msgs::msg::PoseStamped>("move_to", 10, std::bind(&move_to_marker::messageRead, this, _1));
-
+      // Initialise the arm ready publisher
+      arm_ready_publisher_ = this->create_publisher<std_msgs::msg::String>("done_move", 10);
 
       // Generate the movegroup interface
       move_group_interface = std::make_unique<moveit::planning_interface::MoveGroupInterface>(std::shared_ptr<rclcpp::Node>(this), "ur_manipulator");
       
-      move_group_interface->setPlanningTime(5.0);
-      move_group_interface->setNumPlanningAttempts(1);
+      move_group_interface->setPlanningTime(10.0);
+      move_group_interface->setNumPlanningAttempts(15);
       move_group_interface->setPlannerId("RRTstarkConfigDefault");
 
       std::string frame_id = move_group_interface->getPlanningFrame();
@@ -82,8 +84,8 @@ class move_to_marker : public rclcpp::Node
       planning_scene_interface.applyCollisionObject(col_object_sideWall);
       planning_scene_interface.applyCollisionObject(col_object_table);
       // Apply constraints as a collision object
-      planning_scene_interface.applyCollisionObject(col_object_backConst);
-      planning_scene_interface.applyCollisionObject(col_object_sideConst);
+      //planning_scene_interface.applyCollisionObject(col_object_backConst);
+      //planning_scene_interface.applyCollisionObject(col_object_sideConst);
 
       RCLCPP_INFO(this->get_logger(), "constructed");
     }
@@ -198,7 +200,28 @@ class move_to_marker : public rclcpp::Node
       }
     }
 
-    void messageRead(const geometry_msgs::msg::PoseStamped &msg) const {
+    void addPoint(const geometry_msgs::msg::Pose &msg) {
+      if (true) {
+        RCLCPP_INFO(this->get_logger(), "Adding point to path");
+        posepoints.push_back(msg);
+      }
+    }
+
+    void executePath() {
+        moveit_msgs::msg::RobotTrajectory trajectory;
+        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
+        double fraction = move_group_interface->computeCartesianPath(posepoints, 0.01, 0.0, trajectory);
+
+        RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
+
+        move_group_interface->execute(trajectory);
+        RCLCPP_INFO(this->get_logger(), "Done moving");
+    }
+
+    void messageRead(const geometry_msgs::msg::PoseStamped &msg) {
+      std_msgs::msg::String status;
+      status.data = "waiting";
+      arm_ready_publisher_->publish(status);
       if (msg.header.frame_id == "free") {
         executeFreeMove(msg.pose);
       } else if ((msg.header.frame_id == "linear")) {
@@ -207,14 +230,22 @@ class move_to_marker : public rclcpp::Node
         executeRotationMove(msg.pose);
       } else if ((msg.header.frame_id == "home")) {
         executeHomeMove();
-      } else {
+      } else if ((msg.header.frame_id == "add")) {
+        addPoint(msg.pose);
+      } else if ((msg.header.frame_id == "go")) {
+        executePath();
+      }else {
         RCLCPP_INFO(this->get_logger(), "Cannot read move command, executing free move");
         executeFreeMove(msg.pose);
       }
+      status.data = "done";
+      arm_ready_publisher_->publish(status);
     }
 
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr subscription_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arm_ready_publisher_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface;
+  std::vector<geometry_msgs::msg::Pose> posepoints;
 };
 
 

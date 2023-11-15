@@ -35,7 +35,7 @@ class arm_brain : public rclcpp::Node {
       ready_publisher_ = this->create_publisher<std_msgs::msg::String>("ready", 10);
 
       // Initialise the arduino publisher
-      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduino", 10);
+      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduinoCommand", 10);
 
       // Initialise current arm pose
       curr_pose.position.x = 0;
