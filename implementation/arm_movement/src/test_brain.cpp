@@ -386,7 +386,7 @@ class test_brain : public rclcpp::Node {
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
       double y = 0.20;
-      double z = 0.05;
+      double z = 0.1;
     } claw;
     bool ready = 0;
 
