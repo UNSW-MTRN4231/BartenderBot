@@ -26,13 +26,24 @@ class test_brain : public rclcpp::Node {
   public:
     test_brain() : Node("test_brain")
     {
+      parallel_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+      parallel_callback_group2_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+      
+      rclcpp::SubscriptionOptions options;
+      options.callback_group = parallel_callback_group_;
       // Initialise the pose publisher
       pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("move_to", 10);
 
       // Initialise the arduino publisher
       arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduinoCommand", 10);
+
+      // Initialise the arm ready publisher
+      arm_ready_publisher_ = this->create_publisher<std_msgs::msg::String>("done_move", 10);
+      arm_ready_subscriber_ = this->create_subscription<std_msgs::msg::String>("done_move", 10, std::bind(&test_brain::progressChange, this, _1), options);
+
       //timer
-      timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this));
+      timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this), parallel_callback_group2_);
+      
 
       
 
@@ -51,6 +62,18 @@ class test_brain : public rclcpp::Node {
     }
 
   private:
+    //change subscription
+    void progressChange(const std_msgs::msg::String &msg) {
+      RCLCPP_INFO(this->get_logger(), "recieved");
+      if (msg.data == "done") {
+        RCLCPP_INFO(this->get_logger(), "Ready for next move");
+        ready = 1;
+      } else {
+        RCLCPP_INFO(this->get_logger(), "Not ready");
+        ready = 0;
+      }
+    }
+
     //Function to generate a target position message
     geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
       geometry_msgs::msg::Pose msg;
@@ -97,8 +120,14 @@ class test_brain : public rclcpp::Node {
       msg.pose = curr_pose;
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
-      sleep(20.0);
+
+      std_msgs::msg::String status;
+      status.data = "waiting";
+      arm_ready_publisher_->publish(status);
+      sleep(4);
+      while(!ready) {sleep(2);}
     }
 
     void send_pose() {
@@ -108,7 +137,12 @@ class test_brain : public rclcpp::Node {
       RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
-      sleep(20.0);
+      
+      std_msgs::msg::String status;
+      status.data = "waiting";
+      arm_ready_publisher_->publish(status);
+      sleep(4);
+      while(!ready) {sleep(2);}
     }
     
     // toggle gripper
@@ -158,11 +192,12 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
       grip(0);
       
       curr_pose.position.z = pose.position.z + claw.z;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(1);
 
       curr_pose.position.z = 0.37;
@@ -187,7 +222,7 @@ class test_brain : public rclcpp::Node {
         curr_pose.orientation.z = -0.5;
         curr_pose.orientation.w = 0.5;
       }
-      send_pose();
+      send_pose("add");
 
       curr_pose.position.x = big.position.x;
       if (big.position.y > 0.3) {
@@ -195,10 +230,11 @@ class test_brain : public rclcpp::Node {
       } else {
         curr_pose.position.x = big.position.x + claw.y;
       }
-      send_pose("linear");
+      send_pose("add");
 
       curr_pose.position.z -= 0.15;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
       // picks up combined, moves above and rotates
       curr_pose.position.z -= 0.05;
@@ -206,7 +242,7 @@ class test_brain : public rclcpp::Node {
       grip(1);
 
       curr_pose.position.z += 0.3;
-      send_pose("linear");
+      send_pose("add");
 
       //shaking
       if (curr_pose.position.y > 0.3) {
@@ -215,31 +251,32 @@ class test_brain : public rclcpp::Node {
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
-        send_pose();
+        send_pose("add");
 
         curr_pose.orientation.x = -0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = 0.5;
         curr_pose.orientation.w = 0.5;
-        send_pose();
+        send_pose("add");
       } else {
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
-        send_pose();
+        send_pose("add");
 
         curr_pose.orientation.x = 0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = -0.5;
         curr_pose.orientation.w = 0.5;
-        send_pose();
+        send_pose("add");
       }
 
       // places back down and dissasembles
       curr_pose.position.z -= 0.3;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
 
       curr_pose.position.z += 0.05;
@@ -247,7 +284,7 @@ class test_brain : public rclcpp::Node {
       grip(1);
 
       curr_pose.position.z += 0.10;
-      send_pose("linear");
+      send_pose("add");
 
       //flips back upright
       if (curr_pose.position.y > 0.3) {
@@ -259,7 +296,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
 
       curr_pose.position.x = small.position.x;
       if (big.position.y > 0.3) {
@@ -267,9 +304,10 @@ class test_brain : public rclcpp::Node {
       } else {
         curr_pose.position.x = small.position.y + claw.y;
       }
-      send_pose("linear");
+      send_pose("add");
       curr_pose.position.z = small.position.z + claw.z;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
     }
     
@@ -283,12 +321,12 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
       RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
       if (curr_pose.position.y > 0.3) {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
-        send_pose("linear");
+        send_pose("add");
         curr_pose.orientation.x = 0.182746;
         curr_pose.orientation.y = 0.683087;
         curr_pose.orientation.z = 0.183275;
@@ -296,7 +334,7 @@ class test_brain : public rclcpp::Node {
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
-        send_pose("linear");
+        send_pose("add");
         curr_pose.orientation.x = -0.183292;
         curr_pose.orientation.y = 0.682972;
         curr_pose.orientation.z = -0.182745;
@@ -304,17 +342,18 @@ class test_brain : public rclcpp::Node {
       }
       // pours drink
       //curr_pose.orientation.w = M_PI/4;
-      send_pose();
+      send_pose("add");
       RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);
       
 
-      q.setRPY(-M_PI/2, -M_PI/2 , M_PI/2); // return to upright
+      q.setRPY(0, -M_PI/2, -M_PI); // return to upright
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
+      send_pose("go");
     }
 
     
@@ -334,13 +373,13 @@ class test_brain : public rclcpp::Node {
       }
       //moves to home
       home();
-      grip(1);
-      sleep(5);
-      pickup(get_pose("bottle_pink"));
+      grip(0);
       geometry_msgs::msg::Pose test;
-      geometry_msgs::msg::Pose test2;
-      test = get_pose("cup_red");
-      test2 = get_pose("cup_pink");
+      test.position.x = 0.388457;
+      test.position.y = 0.433329;
+      test.position.z = 0.071829;
+      pickup(test);
+      pour(0.1);
 
       //shake(test,test2);
       //pour(0.1);
@@ -350,9 +389,14 @@ class test_brain : public rclcpp::Node {
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    
+    rclcpp::CallbackGroup::SharedPtr parallel_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr parallel_callback_group2_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arm_ready_publisher_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr arm_ready_subscriber_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
@@ -369,7 +413,13 @@ class test_brain : public rclcpp::Node {
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<test_brain>());
+  
+  rclcpp::executors::MultiThreadedExecutor executor;
+
+  auto node = std::make_shared<test_brain>();
+  executor.add_node(node);
+  executor.spin();
+
   rclcpp::shutdown();
   return 0;
 }

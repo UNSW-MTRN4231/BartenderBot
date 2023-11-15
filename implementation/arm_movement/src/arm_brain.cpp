@@ -35,7 +35,7 @@ class arm_brain : public rclcpp::Node {
       ready_publisher_ = this->create_publisher<std_msgs::msg::String>("ready", 10);
 
       // Initialise the arduino publisher
-      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduino", 10);
+      arduino_publisher_ = this->create_publisher<std_msgs::msg::String>("arduinoCommand", 10);
 
       // Initialise current arm pose
       curr_pose.position.x = 0;
@@ -100,17 +100,16 @@ class arm_brain : public rclcpp::Node {
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(20.0);
+      sleep(10.0);
     }
 
     void send_pose() {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = "free";
-      RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
-      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
+      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(20.0);
+      sleep(10.0);
     }
     
     // toggle gripper
