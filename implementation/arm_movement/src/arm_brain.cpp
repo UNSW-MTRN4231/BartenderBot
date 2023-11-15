@@ -75,12 +75,12 @@ class arm_brain : public rclcpp::Node {
     //requests transform frame for object
     geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
       // Check if the transformation is between "world" and "req_frame"
-      std::string fromFrameRel = "world";
+      std::string fromFrameRel = "base_link";
       std::string toFrameRel = req_frame;
       geometry_msgs::msg::TransformStamped t;
 
       try {
-          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+          t = tf_buffer_->lookupTransform(fromFrameRel, toFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
@@ -100,16 +100,17 @@ class arm_brain : public rclcpp::Node {
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
 
     void send_pose() {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = "free";
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
-      sleep(10.0);
+      sleep(20.0);
     }
     
     // toggle gripper
@@ -162,22 +163,23 @@ class arm_brain : public rclcpp::Node {
       tf2::Quaternion q;
       RCLCPP_INFO(this->get_logger(), "Starting pickup");
       if (pose.position.y > 0.3) {
-        curr_pose.position.y = pose.position.y - 0.15;
+        curr_pose.position.y = pose.position.y - claw.y;
         q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
       } else {
-        curr_pose.position.y = pose.position.y + 0.15;
+        curr_pose.position.y = pose.position.y + claw.y;
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
       }
       curr_pose.position.x = pose.position.x;
-      curr_pose.position.z = pose.position.z + 0.07;
+      curr_pose.position.z = pose.position.z + claw.z + 0.15;
       
       curr_pose.orientation.x = q.x();
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
       send_pose();
-
-      curr_pose.position.y = pose.position.y;
+      grip(0);
+      
+      curr_pose.position.z = pose.position.z + claw.z;
       send_pose("linear");
       grip(1);
 
@@ -192,7 +194,7 @@ class arm_brain : public rclcpp::Node {
       pickup(small);
       tf2::Quaternion q;
       //rotates bottle
-      if (curr_pose.position.y > 0.3) {
+      if (big.position.y > 0.3) {
         curr_pose.orientation.x = -0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = 0.5;
@@ -206,7 +208,11 @@ class arm_brain : public rclcpp::Node {
       send_pose();
 
       curr_pose.position.x = big.position.x;
-      curr_pose.position.y = big.position.y;
+      if (big.position.y > 0.3) {
+        curr_pose.position.x = big.position.x - claw.y;
+      } else {
+        curr_pose.position.x = big.position.x + claw.y;
+      }
       send_pose("linear");
 
       curr_pose.position.z -= 0.15;
@@ -274,9 +280,13 @@ class arm_brain : public rclcpp::Node {
       send_pose();
 
       curr_pose.position.x = small.position.x;
-      curr_pose.position.y = small.position.y;
+      if (big.position.y > 0.3) {
+        curr_pose.position.x = small.position.y - claw.y;
+      } else {
+        curr_pose.position.x = small.position.y + claw.y;
+      }
       send_pose("linear");
-      curr_pose.position.z = small.position.z;
+      curr_pose.position.z = small.position.z + claw.z;
       send_pose("linear");
       grip(0);
     }
@@ -334,33 +344,38 @@ class arm_brain : public rclcpp::Node {
       // check for what command is
       
       // adding ingredient
-      if (msg.command.data == "fill") {
+      
+      
+      if (msg.command == "fill") {
+        std::cout << "fill dunphy" << std::endl;
         //need repeat
         for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
-          old_pose = get_pose(msg.item_frames[i].data);
+          std::cout << "filling " << i << std::endl;
+          old_pose = get_pose(msg.item_frames[i]);
+          std::cout << "pose got" << std::endl;
           pickup(old_pose); // to bottle
-          move("big_shaker"); //to shaker
-          pour(msg.item_heights[i].data);
-          move("return"); //to old bottle;
-          grip(0); //release
+          // move("big_shaker"); //to shaker
+          // pour(msg.item_heights[i]);
+          // move("return"); //to old bottle;
+          // grip(0); //release
         }
       }
-      
+      /*
       // mixing ingredients
-      else if (msg.command.data == "shake") {
-        shake(get_pose("big_shaker"), get_pose(msg.item_frames[0].data));
+      else if (msg.command == "shake") {
+        shake(get_pose("big_shaker"), get_pose(msg.item_frames[0]));
       }
       
       // pouring cocktail
-      else if (msg.command.data == "pour") {
+      else if (msg.command == "pour") {
         
         old_pose = get_pose("big_shaker");
         pickup(old_pose); // to bottle
           
         //need repeat
         for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
-          move(msg.item_frames[i].data);
-          pour(msg.item_heights[i].data);
+          move(msg.item_frames[i]);
+          pour(msg.item_heights[i]);
         }
 
         move("return"); //to old shaker
@@ -370,8 +385,12 @@ class arm_brain : public rclcpp::Node {
         RCLCPP_INFO( this->get_logger(), "Unknown Command");
       }
       std_msgs::msg::String ready;
-      ready.data  = "ready";
+      ready.data = "ready";
       ready_publisher_->publish(ready);
+
+
+      */
+
     }
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
@@ -383,6 +402,13 @@ class arm_brain : public rclcpp::Node {
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
+
+    rclcpp::TimerBase::SharedPtr timer_;
+    struct offset {
+      double y = 0.2;
+      double z = 0.10;
+    } claw;
+
     size_t count_;
 };
 

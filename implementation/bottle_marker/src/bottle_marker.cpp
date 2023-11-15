@@ -96,10 +96,15 @@ private:
 
             /* A default pose */
             geometry_msgs::msg::Pose pose;
-            pose.position.x = t.transform.translation.x;
-            pose.position.y = t.transform.translation.y;
-            pose.position.z = t.transform.translation.z;
-            pose.orientation.w = 1.0;
+            if (t.header.frame_id == "") {
+                pose.position.x = 100;
+            } else {
+                pose.position.x = t.transform.translation.x;
+                pose.position.y = t.transform.translation.y;
+                pose.position.z = t.transform.translation.z;
+                pose.orientation.w = 1.0;
+            }
+            
 
             /* Define a box to be attached */
 

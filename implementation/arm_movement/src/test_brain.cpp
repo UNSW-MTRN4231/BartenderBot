@@ -34,6 +34,8 @@ class test_brain : public rclcpp::Node {
       //timer
       timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this));
 
+      
+
       // Initialise current arm pose
       curr_pose.position.x = 0;
       curr_pose.position.y = 0;
@@ -318,17 +320,29 @@ class test_brain : public rclcpp::Node {
     
 
     void brain() {
-      
+      switch state {
+        case 0:
+          home();
+          state = 1;
+        case 1:
+          old_pose = get_pose("bottle_pink");
+          curr_pose = old_pose;
+          send_pose();
+        case 2:
+
+        case 3:
+      }
       //moves to home
       home();
       grip(1);
       sleep(5);
+      pickup(get_pose("bottle_pink"));
       geometry_msgs::msg::Pose test;
       geometry_msgs::msg::Pose test2;
       test = get_pose("cup_red");
       test2 = get_pose("cup_pink");
 
-      shake(test,test2);
+      //shake(test,test2);
       //pour(0.1);
       
      sleep(100.0); 
@@ -346,6 +360,8 @@ class test_brain : public rclcpp::Node {
       double y = 0.2;
       double z = 0.05;
     } claw;
+
+    int state = 0;
 
     size_t count_;
 };

@@ -64,7 +64,7 @@ class move_to_marker : public rclcpp::Node
       // Generate a table collision object based on the lab task
       auto col_object_backWall = generateCollisionObject( 2.4, 0.04, 1.0, 0.85, -0.30, 0.5, frame_id, "backWall");
       auto col_object_sideWall = generateCollisionObject( 0.04, 1.2, 1.0, -0.30, 0.25, 0.5, frame_id, "sideWall");
-      auto col_object_table = generateCollisionObject( 2.4, 1.2, 0.04, 0.85, 0.25, -0.03, frame_id, "table");
+      auto col_object_table = generateCollisionObject( 2.4, 1.2, 0.04, 0.85, 0.25, -0.01, frame_id, "table");
 
       RCLCPP_INFO(this->get_logger(), "insert walls");
 
