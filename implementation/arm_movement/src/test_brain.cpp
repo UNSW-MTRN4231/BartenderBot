@@ -26,6 +26,11 @@ class test_brain : public rclcpp::Node {
   public:
     test_brain() : Node("test_brain")
     {
+      parallel_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+      parallel_callback_group2_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+      
+      rclcpp::SubscriptionOptions options;
+      options.callback_group = parallel_callback_group_;
       // Initialise the pose publisher
       pose_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("move_to", 10);
 
@@ -34,12 +39,10 @@ class test_brain : public rclcpp::Node {
 
       // Initialise the arm ready publisher
       arm_ready_publisher_ = this->create_publisher<std_msgs::msg::String>("done_move", 10);
-      arm_ready_subscriber_ = this->create_subscription<std_msgs::msg::String>("done_move", 10, std::bind(&test_brain::progressChange, this, _1));
+      arm_ready_subscriber_ = this->create_subscription<std_msgs::msg::String>("done_move", 10, std::bind(&test_brain::progressChange, this, _1), options);
 
-      
-      rclcpp::TimerBase::SharedPtr ready_timer_ = this->create_wall_timer(1s, std::bind(&test_brain::progressCheck, this));
       //timer
-      timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this));
+      timer_ = this->create_wall_timer(5000ms, std::bind(&test_brain::brain, this), parallel_callback_group2_);
       
 
       // Initialise current arm pose
@@ -69,15 +72,6 @@ class test_brain : public rclcpp::Node {
       }
     }
 
-    void progressCheck() {
-      RCLCPP_INFO(this->get_logger(), "test");
-      if (!ready) {
-        sleep(1);
-      }
-    }
-
-
-    
     //Function to generate a target position message
     geometry_msgs::msg::Pose generatePoseFromTransform(geometry_msgs::msg::TransformStamped tf) {
       geometry_msgs::msg::Pose msg;
@@ -124,12 +118,14 @@ class test_brain : public rclcpp::Node {
       msg.pose = curr_pose;
       msg.header.frame_id = type;
       RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
 
       std_msgs::msg::String status;
       status.data = "waiting";
       arm_ready_publisher_->publish(status);
-      sleep(20);
+      sleep(4);
+      while(!ready) {sleep(2);}
     }
 
     void send_pose() {
@@ -143,7 +139,8 @@ class test_brain : public rclcpp::Node {
       std_msgs::msg::String status;
       status.data = "waiting";
       arm_ready_publisher_->publish(status);
-      sleep(20);
+      sleep(4);
+      while(!ready) {sleep(2);}
     }
     
     // toggle gripper
@@ -376,6 +373,9 @@ class test_brain : public rclcpp::Node {
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    
+    rclcpp::CallbackGroup::SharedPtr parallel_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr parallel_callback_group2_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_publisher_;
@@ -384,7 +384,6 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose curr_pose;
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::TimerBase::SharedPtr ready_timer_;
     struct offset {
       double y = 0.20;
       double z = 0.05;
@@ -397,7 +396,13 @@ class test_brain : public rclcpp::Node {
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<test_brain>());
+  
+  rclcpp::executors::MultiThreadedExecutor executor;
+
+  auto node = std::make_shared<test_brain>();
+  executor.add_node(node);
+  executor.spin();
+
   rclcpp::shutdown();
   return 0;
 }
