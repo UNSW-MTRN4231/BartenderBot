@@ -210,8 +210,8 @@ class move_to_marker : public rclcpp::Node
     void executePath() {
         moveit_msgs::msg::RobotTrajectory trajectory;
         //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
-        double fraction = move_group_interface->computeCartesianPath(posepoints, 0.01, 0.0, trajectory);
-
+        double fraction = move_group_interface->computeCartesianPath(posepoints, 0.05, 0.0, trajectory);
+        posepoints.clear();
         RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
 
         move_group_interface->execute(trajectory);

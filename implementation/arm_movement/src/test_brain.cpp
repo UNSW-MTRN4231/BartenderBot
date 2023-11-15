@@ -193,11 +193,12 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
       grip(0);
       
       curr_pose.position.z = pose.position.z + claw.z;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(1);
 
       curr_pose.position.z = 0.37;
@@ -222,7 +223,7 @@ class test_brain : public rclcpp::Node {
         curr_pose.orientation.z = -0.5;
         curr_pose.orientation.w = 0.5;
       }
-      send_pose();
+      send_pose("add");
 
       curr_pose.position.x = big.position.x;
       if (big.position.y > 0.3) {
@@ -230,10 +231,11 @@ class test_brain : public rclcpp::Node {
       } else {
         curr_pose.position.x = big.position.x + claw.y;
       }
-      send_pose("linear");
+      send_pose("add");
 
       curr_pose.position.z -= 0.15;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
       // picks up combined, moves above and rotates
       curr_pose.position.z -= 0.05;
@@ -241,7 +243,7 @@ class test_brain : public rclcpp::Node {
       grip(1);
 
       curr_pose.position.z += 0.3;
-      send_pose("linear");
+      send_pose("add");
 
       //shaking
       if (curr_pose.position.y > 0.3) {
@@ -250,31 +252,32 @@ class test_brain : public rclcpp::Node {
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
-        send_pose();
+        send_pose("add");
 
         curr_pose.orientation.x = -0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = 0.5;
         curr_pose.orientation.w = 0.5;
-        send_pose();
+        send_pose("add");
       } else {
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
-        send_pose();
+        send_pose("add");
 
         curr_pose.orientation.x = 0.5;
         curr_pose.orientation.y = 0.5;
         curr_pose.orientation.z = -0.5;
         curr_pose.orientation.w = 0.5;
-        send_pose();
+        send_pose("add");
       }
 
       // places back down and dissasembles
       curr_pose.position.z -= 0.3;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
 
       curr_pose.position.z += 0.05;
@@ -282,7 +285,7 @@ class test_brain : public rclcpp::Node {
       grip(1);
 
       curr_pose.position.z += 0.10;
-      send_pose("linear");
+      send_pose("add");
 
       //flips back upright
       if (curr_pose.position.y > 0.3) {
@@ -294,7 +297,7 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
 
       curr_pose.position.x = small.position.x;
       if (big.position.y > 0.3) {
@@ -302,9 +305,10 @@ class test_brain : public rclcpp::Node {
       } else {
         curr_pose.position.x = small.position.y + claw.y;
       }
-      send_pose("linear");
+      send_pose("add");
       curr_pose.position.z = small.position.z + claw.z;
-      send_pose("linear");
+      send_pose("add");
+      send_pose("go");
       grip(0);
     }
     
@@ -318,12 +322,12 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
       RCLCPP_INFO(this->get_logger(), "Moving to pour angle");
       if (curr_pose.position.y > 0.3) {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y - offset;
-        send_pose("linear");
+        send_pose("add");
         curr_pose.orientation.x = 0.182746;
         curr_pose.orientation.y = 0.683087;
         curr_pose.orientation.z = 0.183275;
@@ -331,7 +335,7 @@ class test_brain : public rclcpp::Node {
       } else {
         // moves accross offset width
         curr_pose.position.y = curr_pose.position.y + offset;
-        send_pose("linear");
+        send_pose("add");
         curr_pose.orientation.x = -0.183292;
         curr_pose.orientation.y = 0.682972;
         curr_pose.orientation.z = -0.182745;
@@ -339,7 +343,7 @@ class test_brain : public rclcpp::Node {
       }
       // pours drink
       //curr_pose.orientation.w = M_PI/4;
-      send_pose();
+      send_pose("add");
       RCLCPP_INFO(this->get_logger(), "Pouring...");
       sleep(2);
       
@@ -349,7 +353,8 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
-      send_pose();
+      send_pose("add");
+      send_pose("go");
     }
 
     
@@ -359,7 +364,11 @@ class test_brain : public rclcpp::Node {
       //moves to home
       home();
       grip(0);
-      
+      geometry_msgs::msg::Pose test;
+      test.position.x = 0.388457;
+      test.position.y = 0.433329;
+      test.position.z = 0.071829;
+      pickup(test);
       pour(0.1);
 
      sleep(100.0); 
