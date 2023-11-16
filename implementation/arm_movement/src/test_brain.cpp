@@ -410,7 +410,7 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
-      double y = 0.2;
+      double y = 0.20;
       double z = 0.1;
     } claw;
     bool ready = 0;
