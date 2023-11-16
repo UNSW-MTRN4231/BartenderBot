@@ -1,10 +1,10 @@
 # command to the UR arm
 
 #command name
-std_msgs/String command
+string command
 
 #height of item
-std_msgs/Float32[] item_heights
+float32[] item_heights
 
 #Vector of item's coord frame
-std_msgs/String[10] item_frames
+string[] item_frames

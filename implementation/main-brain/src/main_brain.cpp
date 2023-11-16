@@ -44,6 +44,8 @@ class main_brain : public rclcpp::Node {
     struct drinkTemplate {
         std::string name;
         std::vector<std::string> ingredients;
+        std::vector<std::string> frames;
+        std::vector<float> heights;
     };
 
     rclcpp::Publisher<brain_msgs::msg::Command>::SharedPtr publisher_;
@@ -57,35 +59,35 @@ class main_brain : public rclcpp::Node {
     int ingredientIndex = 0;
 
     std::vector<struct drinkTemplate> drinkOptions = {
-        drinkTemplate{"shot",{"vodka"}},
+        drinkTemplate{"shot",{"vodka"},{"bottle_pink"},{25}},
         drinkTemplate{"vodka cranberry",{"vodka","c.juice"}},
         drinkTemplate{"margarita",{"tequila","lim.juice","lem.juice"}}
     };
 
-    void sendCommand(std::string command, std::vector<int> heights, std::vector<std::string> frames) {
+    void sendCommand(std::string command, std::vector<float> heights, std::vector<std::string> frames) {
         brain_msgs::msg::Command instruction;
-        instruction.command.data = command;
+        instruction.command = command;
         for (size_t i=0; i < heights.size();i++) {
             std::cout << "Ingredient" << std::endl;
-            instruction.item_heights[i].data = heights.at(i);
-            instruction.item_frames[i].data = frames.at(i);
+            instruction.item_heights.push_back(heights.at(i));
+            instruction.item_frames.push_back(frames.at(i));
         }
-        std::cout << instruction.item_heights[0].data << ", " << instruction.item_frames[0].data << std::endl;
+        std::cout << instruction.item_heights[0] << ", " << instruction.item_frames[0] << std::endl;
         
         publisher_->publish(instruction);
-        std::cout << "Ingredient" << std::endl;
     }
 
     void fillShaker(struct drinkTemplate& drink) {
+        std::cout << "filling shaker" << std::endl;
         int numIngredients = drink.ingredients.size();
         std::string instruction = "fill";
-        std::vector<int> ingredientHeights;
+        std::vector<float> ingredientHeights;
         std::vector<std::string> ingredientFrames;
         
         if (ingredientIndex < numIngredients) {
             //TODO: Pull object height from cams
-            ingredientHeights.push_back(5);
-            ingredientFrames.push_back(drink.ingredients.at(ingredientIndex));
+            ingredientHeights.push_back(drink.heights.at(ingredientIndex));
+            ingredientFrames.push_back(drink.frames.at(ingredientIndex));
             std::cout << ingredientHeights.at(0) << ", " << ingredientFrames.at(0) << std::endl;
             sendCommand(instruction, ingredientHeights, ingredientFrames);
             ingredientIndex++;
@@ -98,7 +100,7 @@ class main_brain : public rclcpp::Node {
     void shakeDrink() {
         std::cout << "shaking" << std::endl;
         std::string instruction = "shake";
-        std::vector<int> ingredientHeights; 
+        std::vector<float> ingredientHeights; 
         std::vector<std::string> ingredientFrames;
         sendCommand(instruction,ingredientHeights ,ingredientFrames);
     };
@@ -107,7 +109,7 @@ class main_brain : public rclcpp::Node {
         std::cout << "serving" << std::endl;
         std::string instruction = "serve";
         //TODO: Pull object height from cams
-        std::vector<int> ingredientHeights = {5,5,5}; 
+        std::vector<float> ingredientHeights = {5,5,5}; 
         std::vector<std::string> ingredientFrames = {"glass1","glass2","glass3"};
         sendCommand(instruction,ingredientHeights ,ingredientFrames);
     }
@@ -124,6 +126,7 @@ class main_brain : public rclcpp::Node {
                     std::cout << drink << std::endl;
                     
                     for (auto& checkDrink : drinkOptions) {
+                        std::cout << checkDrink.name << std::endl;
                         if (checkDrink.name == drink) {
                             std::cout << "Drink found!" << std::endl;
                             chosenDrink = checkDrink;

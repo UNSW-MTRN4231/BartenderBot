@@ -96,12 +96,12 @@ class arm_brain : public rclcpp::Node {
     //requests transform frame for object
     geometry_msgs::msg::TransformStamped tfCallback(std::string req_frame) {
       // Check if the transformation is between "world" and "req_frame"
-      std::string fromFrameRel = "world";
+      std::string fromFrameRel = "base_link";
       std::string toFrameRel = req_frame;
       geometry_msgs::msg::TransformStamped t;
 
       try {
-          t = tf_buffer_->lookupTransform( toFrameRel, fromFrameRel, tf2::TimePointZero);
+          t = tf_buffer_->lookupTransform(fromFrameRel, toFrameRel, tf2::TimePointZero);
       } catch (const tf2::TransformException & ex) {
           RCLCPP_INFO( this->get_logger(), "Could not transform %s to %s: %s", toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
           
@@ -208,12 +208,14 @@ class arm_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
+
       send_pose("add");
       grip(0);
       
       curr_pose.position.z = pose.position.z + claw.z;
       send_pose("add");
       send_pose("go");
+
       grip(1);
 
       curr_pose.position.z = 0.37;
@@ -247,7 +249,6 @@ class arm_brain : public rclcpp::Node {
         curr_pose.position.x = big.position.x + claw.y;
       }
       send_pose("add");
-
       curr_pose.position.z -= 0.15;
       send_pose("add");
       send_pose("go");
@@ -324,6 +325,7 @@ class arm_brain : public rclcpp::Node {
       curr_pose.position.z = small.position.z + claw.z;
       send_pose("add");
       send_pose("go");
+
       grip(0);
     }
     
@@ -381,33 +383,38 @@ class arm_brain : public rclcpp::Node {
       // check for what command is
       
       // adding ingredient
-      if (msg.command.data == "fill") {
+      
+      
+      if (msg.command == "fill") {
+        std::cout << "fill dunphy" << std::endl;
         //need repeat
         for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
-          old_pose = get_pose(msg.item_frames[i].data);
+          std::cout << "filling " << i << std::endl;
+          old_pose = get_pose(msg.item_frames[i]);
+          std::cout << "pose got" << std::endl;
           pickup(old_pose); // to bottle
-          move("big_shaker"); //to shaker
-          pour(msg.item_heights[i].data);
-          move("return"); //to old bottle;
-          grip(0); //release
+          // move("big_shaker"); //to shaker
+          // pour(msg.item_heights[i]);
+          // move("return"); //to old bottle;
+          // grip(0); //release
         }
       }
-      
+      /*
       // mixing ingredients
-      else if (msg.command.data == "shake") {
-        shake(get_pose("big_shaker"), get_pose(msg.item_frames[0].data));
+      else if (msg.command == "shake") {
+        shake(get_pose("big_shaker"), get_pose(msg.item_frames[0]));
       }
       
       // pouring cocktail
-      else if (msg.command.data == "pour") {
+      else if (msg.command == "pour") {
         
         old_pose = get_pose("big_shaker");
         pickup(old_pose); // to bottle
           
         //need repeat
         for (unsigned long int i = 0; i < size(msg.item_frames); i++) {
-          move(msg.item_frames[i].data);
-          pour(msg.item_heights[i].data);
+          move(msg.item_frames[i]);
+          pour(msg.item_heights[i]);
         }
 
         move("return"); //to old shaker
@@ -417,8 +424,12 @@ class arm_brain : public rclcpp::Node {
         RCLCPP_INFO( this->get_logger(), "Unknown Command");
       }
       std_msgs::msg::String ready;
-      ready.data  = "ready";
+      ready.data = "ready";
       ready_publisher_->publish(ready);
+
+
+      */
+
     }
 
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};

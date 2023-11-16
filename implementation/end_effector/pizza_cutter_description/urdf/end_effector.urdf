@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+
+<!-- The name of the robot is given here. -->
+<robot name="bottle_gripper">
+  <material name="blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+
+  <material name="green">
+    <color rgba="0 0.8 0 1"/>
+  </material>
+
+  <material name="red">
+    <color rgba="0.8 0 0 1"/>
+  </material>
+
+  <material name="clear">
+    <color rgba="0.8 0 0 0"/>
+  </material>
+
+  <!-- Base link -0.025 0.035 0.01     ${pi/2.0} 0 0-->
+  <link name="mount">
+    <visual>
+      <origin xyz="-0.025 0.035 0.01" rpy="${pi/2.0} 0 0"/>
+      <geometry>
+        <mesh filename="package://end_effector_description/meshes/Base.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <!-- Link1    in up right" rpy="0 ${pi} ${pi/2.0}"-->
+  <link name="left_gripper">
+    <visual>
+      <origin xyz="0.075 0.21 0.14" rpy="0 ${pi} ${pi/2.0}"/>
+      <geometry>
+        <mesh filename="package://end_effector_description/meshes/Claw.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.10 -0.025 0.05" rpy="${pi/15} ${0} ${0}"/>
+        <geometry>
+          <box size="0.15 0.01 0.15"/>
+        </geometry>
+      </collision>
+  </link>
+
+  <!-- Link2  xyz="-0.31 0.16 0.22" rpy="${pi/2.0} ${pi/2.0} 0" -->
+  <link name="right_gripper">
+    <visual>
+      <origin xyz="-0.29 -0.21 0.14" rpy="${0} ${pi} ${-pi/2}"/>
+      <geometry>
+        <mesh filename="package://end_effector_description/meshes/Claw.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.10 0.025 0.05" rpy="${-pi/15} ${0} ${0}"/>
+        <geometry>
+          <box size="0.15 0.01 0.15"/>
+        </geometry>
+      </collision>
+  </link>
+
+  <!-- joint 1 (Base & L1) -->
+  <joint name="left_gripper_joint" type="fixed">
+    <parent link="mount"/>
+    <child link="left_gripper"/>
+    <axis xyz="1 0 0"/>
+    <origin xyz="0 -0.0175 0" rpy="0 ${pi/2.0} 0"/>
+  </joint>
+
+  <!-- joint 1 (Base & L1) -->
+  <joint name="right_gripper_joint" type="fixed">
+    <parent link="mount"/>
+    <child link="right_gripper"/>
+    <axis xyz="1 0 0"/>
+    <origin xyz="0 0.0175 0" rpy="0 ${pi/2.0} 0"/>
+  </joint>
+
+</robot>
