@@ -359,25 +359,34 @@ class test_brain : public rclcpp::Node {
     
 
     void brain() {
-      switch state {
-        case 0:
-          home();
-          state = 1;
-        case 1:
-          old_pose = get_pose("bottle_pink");
-          curr_pose = old_pose;
-          send_pose();
-        case 2:
+      // int state = 0;
+      // switch (state) {
+      //   case 0: // To home
+      //     home();
+      //     state = 1;
+      //   case 1: // Pickup bottle pink
+      //     old_pose = get_pose("bottle_pink");
+      //     curr_pose = old_pose;
+      //     send_pose();
+      //   case 2: // Pour bottle
 
-        case 3:
-      }
+      //   case 3: // Place bottle
+
+      //   case 4: // Pickup and place mini cup
+
+      //   case 5: // Shake
+
+      //   case 6: // Remove mini cup
+
+      //   case 7: // Serve
+      // }
       //moves to home
       home();
       grip(0);
       geometry_msgs::msg::Pose test;
       test.position.x = 0.388457;
       test.position.y = 0.433329;
-      test.position.z = 0.071829;
+      test.position.z = 0.11829;
       pickup(test);
       pour(0.1);
 
@@ -402,9 +411,9 @@ class test_brain : public rclcpp::Node {
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
       double y = 0.2;
-      double z = 0.05;
+      double z = 0.1;
     } claw;
-
+    bool ready = 0;
     int state = 0;
 
     size_t count_;
