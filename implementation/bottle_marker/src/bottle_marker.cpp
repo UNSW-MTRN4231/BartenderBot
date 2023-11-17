@@ -110,7 +110,7 @@ private:
 
             attached_object.object.primitives.push_back(primitive);
             attached_object.object.primitive_poses.push_back(pose);
-            planning_scene.world.collision_objects.push_back(attached_object.object);
+            //planning_scene.world.collision_objects.push_back(attached_object.object);
         }
         
         RCLCPP_INFO(this->get_logger(),"PUBLISHING POSES");
@@ -129,16 +129,20 @@ private:
         message.id = i;
         message.type = visualization_msgs::msg::Marker::CYLINDER;
         message.action = visualization_msgs::msg::Marker::ADD;
-        message.pose.position.x = t.transform.translation.x;
-        message.pose.position.y = t.transform.translation.y;
-        message.pose.position.z = t.transform.translation.z;
+        if (t.header.frame_id == "") {
+                message.pose.position.x = 100;;
+        } else {
+            message.pose.position.x = t.transform.translation.x;
+            message.pose.position.y = t.transform.translation.y;
+            message.pose.position.z = t.transform.translation.z;
+        }
         message.pose.orientation.x = 0.0;
         message.pose.orientation.y = 0.0;
         message.pose.orientation.z = 0.0;
         message.pose.orientation.w = 1.0;
-        message.scale.x = 0.1;
-        message.scale.y = 0.1;
-        message.scale.z = 0.3;
+        message.scale.x = 0.07;
+        message.scale.y = 0.07;
+        message.scale.z = 0.2;
         message.color.r = 1.0f;
         message.color.g = 0.0f;
         message.color.b = 0.0f;

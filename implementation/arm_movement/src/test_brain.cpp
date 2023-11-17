@@ -64,12 +64,12 @@ class test_brain : public rclcpp::Node {
   private:
     //change subscription
     void progressChange(const std_msgs::msg::String &msg) {
-      RCLCPP_INFO(this->get_logger(), "recieved");
+      //RCLCPP_INFO(this->get_logger(), "recieved");
       if (msg.data == "done") {
-        RCLCPP_INFO(this->get_logger(), "Ready for next move");
+        //RCLCPP_INFO(this->get_logger(), "Ready for next move");
         ready = 1;
       } else {
-        RCLCPP_INFO(this->get_logger(), "Not ready");
+        //RCLCPP_INFO(this->get_logger(), "Not ready");
         ready = 0;
       }
     }
@@ -119,23 +119,24 @@ class test_brain : public rclcpp::Node {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = type;
-      RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
-      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
+      //RCLCPP_INFO(this->get_logger(), "Publishing: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      //RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
 
       std_msgs::msg::String status;
       status.data = "waiting";
       arm_ready_publisher_->publish(status);
-      sleep(4);
+      sleep(5);
       while(!ready) {sleep(2);}
+      sleep(5);
     }
 
     void send_pose() {
       geometry_msgs::msg::PoseStamped msg;
       msg.pose = curr_pose;
       msg.header.frame_id = "free";
-      RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
-      RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
+      //RCLCPP_INFO(this->get_logger(), "Publishing pos: '%f' '%f' '%f' ", msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+      //RCLCPP_INFO(this->get_logger(), "Publishing orien: '%f' '%f' '%f' '%f' ", msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
       pose_publisher_->publish(msg);
       
       std_msgs::msg::String status;
@@ -175,6 +176,7 @@ class test_brain : public rclcpp::Node {
       RCLCPP_INFO(this->get_logger(), "Moving to home position");
     }
 
+    // moves to and picks up object
     void pickup(geometry_msgs::msg::Pose pose) {
       tf2::Quaternion q;
       RCLCPP_INFO(this->get_logger(), "Starting pickup");
@@ -192,23 +194,24 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.y = q.y();
       curr_pose.orientation.z = q.z();
       curr_pose.orientation.w = q.w();
+
       send_pose("add");
       grip(0);
       
       curr_pose.position.z = pose.position.z + claw.z;
       send_pose("add");
       send_pose("go");
+
       grip(1);
 
-      curr_pose.position.z = 0.37;
-      send_pose("linear");
     }
 
     // combines both parts of shaker and mixes, then dissasembles
     void shake(geometry_msgs::msg::Pose big, geometry_msgs::msg::Pose small) {
       // picks up small shaker, moves above other, rotates and combines
-      
+      RCLCPP_INFO(this->get_logger(), "Picking up small shaker");
       pickup(small);
+      RCLCPP_INFO(this->get_logger(), "Assembling shaker");
       tf2::Quaternion q;
       //rotates bottle
       if (big.position.y > 0.3) {
@@ -224,63 +227,111 @@ class test_brain : public rclcpp::Node {
       }
       send_pose("add");
 
+
+      //moves small to big
       curr_pose.position.x = big.position.x;
       if (big.position.y > 0.3) {
-        curr_pose.position.x = big.position.x - claw.y;
+        curr_pose.position.y = big.position.y - claw.y;
       } else {
-        curr_pose.position.x = big.position.x + claw.y;
+        curr_pose.position.y = big.position.y + claw.y;
       }
+      curr_pose.position.z = big.position.z + claw.z;
       send_pose("add");
 
-      curr_pose.position.z -= 0.15;
+      curr_pose.position.z = 0.13;
       send_pose("add");
       send_pose("go");
       grip(0);
+      RCLCPP_INFO(this->get_logger(), "Moving claw right-way-up");
       // picks up combined, moves above and rotates
-      curr_pose.position.z -= 0.05;
-      send_pose("linear");
-      grip(1);
-
-      curr_pose.position.z += 0.3;
+      curr_pose.position.z += 0.2;
       send_pose("add");
+      // flips gripper right way up again
+      if (big.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+      send_pose("add");
+      send_pose("go");
 
+      // picks up combined shakers
+      RCLCPP_INFO(this->get_logger(), "Picking up combined shaker");
+      geometry_msgs::msg::Pose combined;
+      combined.position.x = big.position.x;
+      combined.position.y = big.position.y;
+      combined.position.z = 0.2;
+      pickup(combined);
+
+      RCLCPP_INFO(this->get_logger(), "Shaking");
+      curr_pose.position.z += 0.2;
       //shaking
       if (curr_pose.position.y > 0.3) {
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+        send_pose("add");
+
         q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
         send_pose("add");
-
-        curr_pose.orientation.x = -0.5;
+      } else {
+        curr_pose.orientation.x = 0.5;
         curr_pose.orientation.y = 0.5;
-        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.z = -0.5;
         curr_pose.orientation.w = 0.5;
         send_pose("add");
-      } else {
+
         q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
         curr_pose.orientation.x = q.x();
         curr_pose.orientation.y = q.y();
         curr_pose.orientation.z = q.z();
         curr_pose.orientation.w = q.w();
         send_pose("add");
-
-        curr_pose.orientation.x = 0.5;
-        curr_pose.orientation.y = 0.5;
-        curr_pose.orientation.z = -0.5;
-        curr_pose.orientation.w = 0.5;
-        send_pose("add");
       }
 
       // places back down and dissasembles
-      curr_pose.position.z -= 0.3;
+      curr_pose.position.z = 0.13;
+      // flips gripper right way up again
+      if (big.position.y > 0.3) {
+        q.setRPY(M_PI/2 ,-M_PI/2 , M_PI);
+      } else {
+        q.setRPY(M_PI, -M_PI/2 , -M_PI/2);
+      }
+      curr_pose.orientation.x = q.x();
+      curr_pose.orientation.y = q.y();
+      curr_pose.orientation.z = q.z();
+      curr_pose.orientation.w = q.w();
+
       send_pose("add");
       send_pose("go");
       grip(0);
 
-      curr_pose.position.z += 0.05;
-      send_pose("linear");
+      RCLCPP_INFO(this->get_logger(), "Dissassemble");
+      curr_pose.position.z += 0.15;
+
+      //rotates claw upside down
+      if (big.position.y > 0.3) {
+        curr_pose.orientation.x = -0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = 0.5;
+        curr_pose.orientation.w = 0.5;
+      } else {
+        curr_pose.orientation.x = 0.5;
+        curr_pose.orientation.y = 0.5;
+        curr_pose.orientation.z = -0.5;
+        curr_pose.orientation.w = 0.5;
+      }
+      send_pose("add");
+      send_pose("go");
       grip(1);
 
       curr_pose.position.z += 0.10;
@@ -298,22 +349,25 @@ class test_brain : public rclcpp::Node {
       curr_pose.orientation.w = q.w();
       send_pose("add");
 
+      curr_pose.position.z = 0.13;
+      send_pose("add");
+      send_pose("go");
+      grip(1);
+      RCLCPP_INFO(this->get_logger(), "Moving small back");
       curr_pose.position.x = small.position.x;
-      if (big.position.y > 0.3) {
+      if (small.position.y > 0.3) {
         curr_pose.position.x = small.position.y - claw.y;
       } else {
         curr_pose.position.x = small.position.y + claw.y;
       }
-      send_pose("add");
       curr_pose.position.z = small.position.z + claw.z;
-      send_pose("add");
-      send_pose("go");
+      send_pose();
       grip(0);
     }
     
     // pours the bottle at current location
     void pour(float offset) {
-      offset = (0.07-offset/2)/sqrt(2);
+      offset = -(0.04-offset*0.01/2)/sqrt(2);
         
       tf2::Quaternion q;
       q.setRPY(0, -M_PI/2, -M_PI); // facing computer
@@ -384,11 +438,17 @@ class test_brain : public rclcpp::Node {
       home();
       grip(0);
       geometry_msgs::msg::Pose test;
-      test.position.x = 0.388457;
+      test.position.x = 0.588457;
       test.position.y = 0.433329;
       test.position.z = 0.11829;
-      pickup(test);
-      pour(0.1);
+
+      geometry_msgs::msg::Pose test2;
+      test2.position.x = 0.288457;
+      test2.position.y = 0.533329;
+      test2.position.z = 0.11829;
+
+
+      shake(get_pose("cup_red"),get_pose("cup_pink"));
 
       //shake(test,test2);
       //pour(0.1);
@@ -410,7 +470,7 @@ class test_brain : public rclcpp::Node {
     geometry_msgs::msg::Pose old_pose;
     rclcpp::TimerBase::SharedPtr timer_;
     struct offset {
-      double y = 0.20;
+      double y = 0.15;
       double z = 0.1;
     } claw;
     bool ready = 0;

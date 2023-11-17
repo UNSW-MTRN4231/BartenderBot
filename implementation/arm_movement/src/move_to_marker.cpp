@@ -173,7 +173,6 @@ class move_to_marker : public rclcpp::Node
     }
 
     void executeHomeMove() const {
-
       //TODO NEW CHECK FOR LEGAL POSE
       if (true) {
         auto success = false;
@@ -183,8 +182,8 @@ class move_to_marker : public rclcpp::Node
         moveit::planning_interface::MoveGroupInterface::Plan planMessage;
 
         //Plan movement to home
-        //std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -105.0*M_PI/180, -90.0*M_PI/180, 0.0*M_PI/180};
-        std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -15.0*M_PI/180, 90.0*M_PI/180, 90.0*M_PI/180};
+        std::vector<double> joints = {-150.0*M_PI/180, -90.0*M_PI/180, -90.0*M_PI/180, -180.0*M_PI/180, -90.0*M_PI/180, 90.0*M_PI/180};
+        //std::vector<double> joints = {0.0*M_PI/180, -75.0*M_PI/180, 90.0*M_PI/180, -15.0*M_PI/180, 90.0*M_PI/180, 90.0*M_PI/180};
         move_group_interface->setJointValueTarget(joints);
         success = static_cast<bool>(move_group_interface->plan(planMessage));
         RCLCPP_INFO(this->get_logger(), "Planning done");
@@ -209,8 +208,8 @@ class move_to_marker : public rclcpp::Node
 
     void executePath() {
         moveit_msgs::msg::RobotTrajectory trajectory;
-        //double fraction = move_group_interface->computeCartesianPath(waypoints, 0.01, 0.0, planMessage.trajectory_);
-        double fraction = move_group_interface->computeCartesianPath(posepoints, 0.01, 0.0, trajectory);
+        double fraction = move_group_interface->computeCartesianPath(posepoints, 0.05, 5.0, trajectory);
+        //double fraction = move_group_interface->computeCartesianPath(posepoints, 0.01, 0.0, trajectory);
         posepoints.clear();
         RCLCPP_INFO(this->get_logger(),"Visualising cartesian path, (%.2f%% achieved)", fraction*100.0);
 
