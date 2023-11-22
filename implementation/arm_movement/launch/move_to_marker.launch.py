@@ -43,7 +43,7 @@ def get_robot_description():
             "true",
             " ",
             "safety_pos_margin:=",
-            "0.15",
+            "0.05",
             " ",
             "safety_k_position:=",
             "20",
